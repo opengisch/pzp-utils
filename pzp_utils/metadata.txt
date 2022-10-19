@@ -1,6 +1,6 @@
 [general]
 name=pzp utils
-qgisMinimumVersion=3.22
+qgisMinimumVersion=3.16
 description=pzp utils
 version=0.0.1
 author=OPENGIS.ch
