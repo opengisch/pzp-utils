@@ -1,7 +1,7 @@
 [general]
-name=PZP Utils
+name=pzp utils
 qgisMinimumVersion=3.22
-description=PZP Utils
+description=pzp utils
 version=0.0.1
 author=OPENGIS.ch
 email=info@opengis.ch
