@@ -53,13 +53,92 @@ class FixGeometries(QgsProcessingAlgorithm):
 
     def processAlgorithm(self, parameters, context, feedback):
 
-        min_area_to_keep = 50
+        min_area_to_keep = 5
         delete_holes_area = 100
+
+        result = processing.run(
+            "native:snappointstogrid",
+            {
+                'INPUT': parameters[self.INPUT],
+                'HSPACING': 0.001,
+                'VSPACING': 0.001,
+                'ZSPACING': 0,
+                'MSPACING': 0,
+                'OUTPUT': 'memory:',
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        result = processing.run(
+            "native:buffer",
+            {
+                'INPUT': result['OUTPUT'],
+                'DISTANCE': -1e-06,
+                'SEGMENTS': 5,
+                'END_CAP_STYLE': 0,
+                'JOIN_STYLE': 0,
+                'MITER_LIMIT': 2,
+                'DISSOLVE': False,
+                'OUTPUT': 'memory:'
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        result = processing.run(
+            "native:snappointstogrid",
+            {
+                'INPUT': result['OUTPUT'],
+                'HSPACING': 0.001,
+                'VSPACING': 0.001,
+                'ZSPACING': 0,
+                'MSPACING': 0,
+                'OUTPUT': 'memory:',
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        result = processing.run(
+            "native:buffer",
+            {
+                'INPUT': result['OUTPUT'],
+                'DISTANCE': 1e-06,
+                'SEGMENTS': 5,
+                'END_CAP_STYLE': 0,
+                'JOIN_STYLE': 0,
+                'MITER_LIMIT': 2,
+                'DISSOLVE': False,
+                'OUTPUT': 'memory:'
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        result = processing.run(
+            "native:snappointstogrid",
+            {
+                'INPUT': result['OUTPUT'],
+                'HSPACING': 0.001,
+                'VSPACING': 0.001,
+                'ZSPACING': 0,
+                'MSPACING': 0,
+                'OUTPUT': 'memory:',
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
 
         result = processing.run(
             "native:extractbyexpression",
             {
-                'INPUT': parameters[self.INPUT],
+                'INPUT': result['OUTPUT'],
                 'EXPRESSION': f'$area >= {min_area_to_keep}',
                 'OUTPUT': 'memory:',
             },
