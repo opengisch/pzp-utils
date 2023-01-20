@@ -149,7 +149,7 @@ class ApplyMatrix(QgsProcessingAlgorithm):
 
 
         self.addParameter(
-            QgsProcessingParameterFeatureSink(self.OUTPUT, "Gradi di pericolo")
+            QgsProcessingParameterFeatureSink(self.OUTPUT, "Matrice applicata")
         )
 
     def processAlgorithm(self, parameters, context, feedback):
