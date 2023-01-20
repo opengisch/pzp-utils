@@ -7,7 +7,7 @@ from qgis.core import (
     QgsProcessingException,
     QgsProcessingParameterFeatureSource,
     QgsProcessingParameterField,
-    QgsProcessingParameterVectorDestination,
+    QgsProcessingParameterFeatureSink,
 )
 from qgis.PyQt.QtCore import QVariant
 
@@ -53,7 +53,7 @@ class DangerZones(QgsProcessingAlgorithm):
         )
 
         self.addParameter(
-            QgsProcessingParameterVectorDestination(self.OUTPUT, "Zone di pericolo")
+            QgsProcessingParameterFeatureSink(self.OUTPUT, "Zone di pericolo")
         )
 
     def processAlgorithm(self, parameters, context, feedback):
@@ -181,8 +181,30 @@ class DangerZones(QgsProcessingAlgorithm):
                 "MSPACING": 0,
                 "VSPACING": 0.001,
                 "ZSPACING": 0,
-                "OUTPUT": parameters[self.OUTPUT],
+                "OUTPUT": "memory:",
             },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        result = processing.run(
+            "native:multiparttosingleparts",
+            {
+                'INPUT': result["OUTPUT"],
+                "OUTPUT": "memory:",
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        result = processing.run(
+            "native:deletecolumn",
+            {'INPUT': result["OUTPUT"],
+             'COLUMN':['fid', 'layer', 'path'],
+             "OUTPUT": parameters[self.OUTPUT],
+             },
             context=context,
             feedback=feedback,
             is_child_algorithm=True,
