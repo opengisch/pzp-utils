@@ -15,7 +15,7 @@ from qgis.PyQt.QtCore import QVariant
 class DangerZones(QgsProcessingAlgorithm):
 
     INPUT = "INPUT"
-    DANGER_FIELD = "DANGER_FIELD"
+    MATRIX_FIELD = "MATRIX_FIELD"
     OUTPUT = "OUTPUT"
 
     def createInstance(self):
@@ -45,8 +45,8 @@ class DangerZones(QgsProcessingAlgorithm):
 
         self.addParameter(
             QgsProcessingParameterField(
-                name=self.DANGER_FIELD,
-                description="Campo contenente il grado di pericolo",
+                name=self.MATRIX_FIELD,
+                description="Campo contenente il valore della matrice",
                 parentLayerParameterName=self.INPUT,
                 type=QgsProcessingParameterField.Numeric,
             )
@@ -67,9 +67,9 @@ class DangerZones(QgsProcessingAlgorithm):
         fields = QgsFields()
         fields.append(QgsField("Grado di pericolo", QVariant.Int))
 
-        danger_field = self.parameterAsFields(
+        matrix_field = self.parameterAsFields(
             parameters,
-            self.DANGER_FIELD,
+            self.MATRIX_FIELD,
             context,
         )[0]
 
@@ -84,23 +84,23 @@ class DangerZones(QgsProcessingAlgorithm):
 
         final_layer = None
 
-        used_grades = set()
+        used_matrix_values = set()
 
         for feature in source.getFeatures():
             # name = feature["name"]
-            used_grades.add(feature[danger_field])
+            used_matrix_values.add(feature[matrix_field])
 
-        used_grades = sorted(used_grades, reverse=True)
+        used_matrix_values = sorted(used_matrix_values, reverse=True)
 
-        feedback.pushInfo(f"Used grades {used_grades}")
+        feedback.pushInfo(f"Used matrix values {used_matrix_values}")
 
-        for grado in used_grades:
-            feedback.pushInfo(f'"{danger_field}" = {grado}')
+        for matrix_value in used_matrix_values:
+            feedback.pushInfo(f'"{matrix_field}" = {matrix_value}')
             result = processing.run(
                 "native:extractbyexpression",
                 {
                     "INPUT": parameters[self.INPUT],
-                    "EXPRESSION": f'"{danger_field}" = {grado}',
+                    "EXPRESSION": f'"{matrix_field}" = {matrix_value}',
                     "OUTPUT": "memory:",
                 },
                 context=context,
@@ -111,7 +111,7 @@ class DangerZones(QgsProcessingAlgorithm):
                 "native:dissolve",
                 {
                     "INPUT": result["OUTPUT"],
-                    "FIELD": f"{danger_field}",
+                    "FIELD": f"{matrix_field}",
                     "SEPARATE_DISJOINT": True,
                     "OUTPUT": "memory:",
                 },
@@ -120,7 +120,7 @@ class DangerZones(QgsProcessingAlgorithm):
                 is_child_algorithm=True,
             )
 
-            if grado == max(used_grades):
+            if matrix_value == max(used_matrix_values):
                 final_layer = result["OUTPUT"]
             else:
                 result = processing.run(
@@ -164,7 +164,6 @@ class DangerZones(QgsProcessingAlgorithm):
             {
                 "INPUT": result["OUTPUT"],
                 "REFERENCE_LAYER": result["OUTPUT"],
-                "DISTANCE": -0.0000001,
                 "TOLERANCE": 1,
                 "BEHAVIOR": 0,
                 "OUTPUT": "memory:",
