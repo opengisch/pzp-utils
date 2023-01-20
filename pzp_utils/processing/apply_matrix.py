@@ -128,7 +128,7 @@ class ApplyMatrix(QgsProcessingAlgorithm):
                 self.invalidSourceError(parameters, self.INPUT)
             )
 
-        fields = QgsFields()
+        fields = source.fields()
         fields.append(QgsField("grado_pericolo", QVariant.Int))
 
         (sink, dest_id) = self.parameterAsSink(
@@ -173,15 +173,11 @@ class ApplyMatrix(QgsProcessingAlgorithm):
             intensity = feature.attribute(intensity_field)
             period = feature.attribute(period_field)
 
-            new_feature = QgsFeature()
-            new_feature.setGeometry(feature.geometry())
-            new_feature.setAttributes(
-                [
-                    self.get_matrix_value(processed_matrix, intensity, period),
-                ]
-            )
+            attributes = feature.attributes()
+            attributes.append(self.get_matrix_value(processed_matrix, intensity, period))
+            feature.setAttributes(attributes)
 
-            new_features.append(new_feature)
+            new_features.append(feature)
 
         sink.addFeatures(new_features, QgsFeatureSink.FastInsert)
         return {self.OUTPUT: dest_id}
