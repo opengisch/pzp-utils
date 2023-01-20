@@ -89,47 +89,60 @@ class ApplyMatrix(QgsProcessingAlgorithm):
             QgsProcessingParameterMatrix(
                 self.MATRIX,
                 "Matrice manuale",
-                headers=["Intensità", "Periodo ritorno max", "Valore"],
+                headers=["Intensità", "Periodo ritorno max", "Valore matrice", "Valore pericolo"],
                 defaultValue=[
                     1002,
                     30,
-                    2,
+                    3,
+                    1003,
                     1002,
                     100,
-                    1,
+                    2,
+                    1002,
                     1002,
                     300,
                     1,
                     1002,
+                    1002,
                     99999,
-                    0,
+                    -10,
+                    1001,
                     1003,
                     30,
-                    2,
+                    6,
+                    1003,
                     1003,
                     100,
-                    2,
+                    5,
+                    1003,
                     1003,
                     300,
-                    2,
+                    4,
+                    1003,
                     1003,
                     99999,
-                    0,
+                    -10,
+                    1001,
                     1004,
                     30,
-                    3,
+                    9,
+                    1004,
                     1004,
                     100,
-                    3,
+                    8,
+                    1004,
                     1004,
                     300,
-                    3,
+                    7,
+                    1004,
                     1004,
                     99999,
-                    0,
+                    -10,
+                    1001,
                     1000,
                     99999,
                     -10,
+                    1000,
                 ],
             )
         )
@@ -149,6 +162,7 @@ class ApplyMatrix(QgsProcessingAlgorithm):
 
         fields = source.fields()
         fields.append(QgsField("grado_pericolo", QVariant.Int))
+        fields.append(QgsField("matrice", QVariant.Int))
 
         (sink, dest_id) = self.parameterAsSink(
             parameters,
@@ -207,8 +221,12 @@ class ApplyMatrix(QgsProcessingAlgorithm):
 
             attributes = feature.attributes()
 
+            matrice, grado_pericolo = self.get_matrix_value(processed_matrix, intensity, period)
             # grado_pericolo
-            attributes.append(self.get_matrix_value(processed_matrix, intensity, period))
+            attributes.append(grado_pericolo)
+
+            # matrice
+            attributes.append(matrice)
 
             feature.setAttributes(attributes)
 
@@ -218,20 +236,20 @@ class ApplyMatrix(QgsProcessingAlgorithm):
         return {self.OUTPUT: dest_id}
 
     def process_matrix_param(self, matrix):
-        """Return dict of dicts e.g. { intensity = { return_years = value, return_years = value}}"""
+        """Return dict of dicts e.g. { intensity = { return_years = (matrix_value, danger), return_years = (matrix_value, danger}}"""
 
         # Convert elements to int
         for i in range(len(matrix)):
             matrix[i] = int(matrix[i])
 
         result = {}
-        for i in range(0, len(matrix), 3):
+        for i in range(0, len(matrix), 4):
             inner_dict = result.get(matrix[i], None)
 
             if inner_dict:
-                result[matrix[i]][matrix[i + 1]] = matrix[i + 2]
+                result[matrix[i]][matrix[i + 1]] = (matrix[i + 2], matrix[i + 3])
             else:
-                result[matrix[i]] = {matrix[i + 1]: matrix[i + 2]}
+                result[matrix[i]] = {matrix[i + 1]: (matrix[i + 2], matrix[i + 3])}
 
         return result
 
