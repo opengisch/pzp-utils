@@ -53,8 +53,8 @@ class FixGeometries(QgsProcessingAlgorithm):
 
     def processAlgorithm(self, parameters, context, feedback):
 
-        min_area_to_keep = 5
-        delete_holes_area = 100
+        min_area_to_keep = 1
+        delete_holes_area = 1
 
         result = processing.run(
             "native:snappointstogrid",
