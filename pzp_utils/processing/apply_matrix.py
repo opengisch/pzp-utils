@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from qgis.core import (
     QgsFeature,
     QgsFeatureSink,
@@ -10,9 +12,11 @@ from qgis.core import (
     QgsProcessingParameterFeatureSource,
     QgsProcessingParameterField,
     QgsProcessingParameterMatrix,
+    QgsProcessingParameterEnum,
 )
 from qgis.PyQt.QtCore import QVariant
 
+from . import domains
 
 class ApplyMatrix(QgsProcessingAlgorithm):
 
@@ -20,7 +24,13 @@ class ApplyMatrix(QgsProcessingAlgorithm):
     PERIOD_FIELD = "PERIOD_FIELD"
     INTENSITY_FIELD = "INTENSITY_FIELD"
     MATRIX = "MATRIX"
+    PREDEFINED_MATRIX = "PREDEFINED_MATRIX"
     OUTPUT = "OUTPUT"
+
+    PREDEFINED_MATRIX_CHOICES = list(
+        domains.PROCESS_TYPES.values()
+    )
+    PREDEFINED_MATRIX_CHOICES.insert(0, "Inserimento manuale")
 
     def createInstance(self):
         return ApplyMatrix()
@@ -68,9 +78,17 @@ class ApplyMatrix(QgsProcessingAlgorithm):
         )
 
         self.addParameter(
+            QgsProcessingParameterEnum(
+                self.PREDEFINED_MATRIX,
+                "Matrice predefinita",
+                self.PREDEFINED_MATRIX_CHOICES,
+                defaultValue = 0,
+        ))
+
+        self.addParameter(
             QgsProcessingParameterMatrix(
                 self.MATRIX,
-                "Matrice da applicare",
+                "Matrice manuale",
                 headers=["Intensità", "Periodo ritorno max", "Valore"],
                 defaultValue=[
                     1002,
@@ -116,6 +134,7 @@ class ApplyMatrix(QgsProcessingAlgorithm):
             )
         )
 
+
         self.addParameter(
             QgsProcessingParameterFeatureSink(self.OUTPUT, "Gradi di pericolo")
         )
@@ -158,11 +177,24 @@ class ApplyMatrix(QgsProcessingAlgorithm):
             context,
         )[0]
 
+        predefined_matrix_idx = self.parameterAsInt(
+            parameters,
+            self.PREDEFINED_MATRIX,
+            context,
+        )
+
+        # Manual matrix
         matrix = self.parameterAsMatrix(
             parameters,
             self.MATRIX,
             context,
         )
+
+        # Predefined matrix
+        if not predefined_matrix_idx == 0:
+            predefined_matrix_idx -= 1  # first element is "Inserimento manuale"
+            process_type = list(domains.PROCESS_TYPES.keys())[predefined_matrix_idx]
+            matrix = domains.MATRICES[process_type]
 
         processed_matrix = self.process_matrix_param(matrix)
         feedback.pushInfo(f"Processed matrix is {processed_matrix}")
@@ -174,7 +206,10 @@ class ApplyMatrix(QgsProcessingAlgorithm):
             period = feature.attribute(period_field)
 
             attributes = feature.attributes()
+
+            # grado_pericolo
             attributes.append(self.get_matrix_value(processed_matrix, intensity, period))
+
             feature.setAttributes(attributes)
 
             new_features.append(feature)
