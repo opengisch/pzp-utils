@@ -164,7 +164,7 @@ class DangerZones(QgsProcessingAlgorithm):
             {
                 "INPUT": result["OUTPUT"],
                 "REFERENCE_LAYER": result["OUTPUT"],
-                "TOLERANCE": 1,
+                "TOLERANCE": 0.1,
                 "BEHAVIOR": 0,
                 "OUTPUT": "memory:",
             },
