@@ -92,6 +92,12 @@ class DangerZones(QgsProcessingAlgorithm):
 
         used_matrix_values = sorted(used_matrix_values, reverse=True)
 
+        # -10 in the matrix is logically bigger than 0
+        # -10 means "pericolo residuo", 0 is "non in pericolo"
+        # so we swap them
+        if 0 in used_matrix_values and -10 in used_matrix_values:
+            used_matrix_values[-1], used_matrix_values[-2] = used_matrix_values[-2], used_matrix_values[-1]
+
         feedback.pushInfo(f"Used matrix values {used_matrix_values}")
 
         for matrix_value in used_matrix_values:
