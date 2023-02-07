@@ -120,7 +120,7 @@ MATRICES = {
         1001,
         1000,
         99999,
-        -10,
+        0,
         1000,
     ],
     1120: [  # Alluvionamento Corso d'acqua principale
@@ -174,7 +174,7 @@ MATRICES = {
         1001,
         1000,
         99999,
-        -10,
+        0,
         1000,
     ],
     1200: [  # Flusso detrito
@@ -228,7 +228,7 @@ MATRICES = {
         1001,
         1000,
         99999,
-        -10,
+        0,
         1000,
     ],
     1400: [  # Ruscellamento superficiale
@@ -282,7 +282,7 @@ MATRICES = {
         1001,
         1000,
         99999,
-        -10,
+        0,
         1000,
     ],
     2001: [  # Scivolamento spontaneo
@@ -336,7 +336,7 @@ MATRICES = {
         1001,
         1000,
         99999,
-        -10,
+        0,
         1000,
     ],
     2002: [  # Colata detritica
@@ -390,7 +390,7 @@ MATRICES = {
         1001,
         1000,
         99999,
-        -10,
+        0,
         1000,
     ],
     3000: [  # Caduta sassi
@@ -444,7 +444,7 @@ MATRICES = {
         1001,
         1000,
         99999,
-        -10,
+        0,
         1000,
     ],
     4100: [  # Valanga radente
@@ -474,7 +474,7 @@ MATRICES = {
         1004,
         1000,
         99999,
-        -10,
+        0,
         1000,
     ],
     4200: [  # Valanga polverosa
@@ -504,7 +504,7 @@ MATRICES = {
         1004,
         1000,
         99999,
-        -10,
+        0,
         1000,
     ],
 }
