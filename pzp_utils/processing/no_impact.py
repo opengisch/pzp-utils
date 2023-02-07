@@ -26,6 +26,7 @@ class NoImpact(QgsProcessingAlgorithm):
     AREA_LAYER = "AREA_LAYER"
     INTENSITY_LAYER = "INTENSITY_LAYER"
     PERIOD_FIELD = "PERIOD_FIELD"
+    INTENSITY_FIELD = "INTENSITY_FIELD"
     OUTPUT = "OUTPUT"
 
     def createInstance(self):
@@ -73,6 +74,15 @@ class NoImpact(QgsProcessingAlgorithm):
         )
 
         self.addParameter(
+            QgsProcessingParameterField(
+                name=self.INTENSITY_FIELD,
+                description="Campo contenente l'intensità",
+                parentLayerParameterName=self.INTENSITY_LAYER,
+                type=QgsProcessingParameterField.Numeric,
+            )
+        )
+
+        self.addParameter(
             QgsProcessingParameterFeatureSink(self.OUTPUT, "Nessun impatto")
         )
 
@@ -85,9 +95,23 @@ class NoImpact(QgsProcessingAlgorithm):
             context,
         )[0]
 
+        intensity_field = self.parameterAsFields(
+            parameters,
+            self.INTENSITY_FIELD,
+            context,
+        )[0]
+
         used_periods = set()
 
         attributes = None
+
+        period_field_idx = -1
+        intensity_field_idx = -1
+
+        one_feature = next(source.getFeatures())
+        if one_feature:
+            period_field_idx = one_feature.fieldNameIndex(period_field)
+            intensity_field_idx = one_feature.fieldNameIndex(intensity_field)
 
         for feature in source.getFeatures():
             used_periods.add(feature[period_field])
@@ -145,13 +169,10 @@ class NoImpact(QgsProcessingAlgorithm):
             )
 
             for feature in result["OUTPUT"].getFeatures():
-                # FIXME: get the actual index!
-                # FIXME: get the 1000 from the domains!
-                attributes[2] = period
-                attributes[3] = 1000
+                attributes[period_field_idx] = period
+                attributes[intensity_field_idx] = 1000
 
                 feature.setAttributes(attributes)
-                feedback.pushInfo(f"NPLA {feature.attributes()}")
 
                 # TODO rimuovere fid
                 sink.addFeature(feature)
