@@ -176,11 +176,15 @@ class Propagation(QgsProcessingAlgorithm):
                 # is_child_algorithm=True,
             )
 
+            features_to_add = []
             # # We try to define if the result polygons are left or right of the lines
             for polygon in result["OUTPUT"].getFeatures():
-                feedback.pushInfo(f"{polygon=}")
+                new_feature = QgsFeature(fields)
+                new_feature.setGeometry(polygon.geometry())
+                attributes = polygon.attributes()
+                attributes.append(0) # acca_prob
 
-                for line in subset_propagation["OUTPUT"].getFeatures(): ##subset_propagation_features:
+                for line in subset_propagation["OUTPUT"].getFeatures():
                     distance = line.geometry().distance(polygon.geometry())
                     feedback.pushInfo(f"{distance=}")
                     # Line and geometry are touching
@@ -190,19 +194,17 @@ class Propagation(QgsProcessingAlgorithm):
 
                         left = self.left_of_line(polygon, line)
                         feedback.pushInfo(f"{left=}")
-
-                        if left:
+                        if left == False:
                             acca_prob = domains.MATRIX_BREAKING[propagation_probability][breaking_probability]
                             feedback.pushInfo(f"{acca_prob=}")
-
-                            new_feature = QgsFeature(fields)
-                            new_feature.setGeometry(polygon.geometry())
-                            attributes = polygon.attributes()
-                            attributes.append(acca_prob)
+                            if attributes[-1] < acca_prob:
+                                attributes.append(acca_prob)
                             new_feature.setAttributes(attributes)
 
-                            sink.addFeature(new_feature)
+                if attributes[-1] > 0:
+                    features_to_add.append(new_feature)
 
+            sink.addFeatures(features_to_add)
         return {self.OUTPUT: dest_id}
 
     def left_of_line(self, poly, line):
