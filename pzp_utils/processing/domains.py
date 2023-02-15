@@ -68,6 +68,28 @@ PROCESS_TYPES = OrderedDict(
     }
 )
 
+# Caduta sassi
+MATRIX_BREAKING = {
+    1001: {  # Probabilità di propagazione
+        1003: 1001,  # Probabilità di rottura: probabilità di accadimento (perido di ritorno del layer intensità)
+        1002: 1000,
+        1001: 1000,
+        1000: 1000,
+    },
+    1002: {
+        1003: 1002,
+        1002: 1001,
+        1001: 1000,
+        1000: 1000,
+    },
+    1003: {
+        1003: 1003,
+        1002: 1002,
+        1001: 1001,
+        1000: 1000,
+    },
+}
+
 MATRICES = {
     1110: [  # Alluvionamento Corso d'acqua minore
         1002,  # Intensità

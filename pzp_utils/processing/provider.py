@@ -6,6 +6,7 @@ from pzp_utils.processing.simplify_intensity import SimplifyIntensity
 from pzp_utils.processing.merge_intensity_layers import MergeIntensityLayers
 from pzp_utils.processing.fix_geometries import FixGeometries
 from pzp_utils.processing.no_impact import NoImpact
+from pzp_utils.processing.propagation import Propagation
 
 
 class Provider(QgsProcessingProvider):
@@ -16,6 +17,7 @@ class Provider(QgsProcessingProvider):
         self.addAlgorithm(MergeIntensityLayers())
         self.addAlgorithm(FixGeometries())
         self.addAlgorithm(NoImpact())
+        self.addAlgorithm(Propagation())
 
     def id(self, *args, **kwargs):
         return "pzp"
