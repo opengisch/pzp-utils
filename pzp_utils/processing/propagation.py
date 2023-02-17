@@ -1,5 +1,7 @@
 from qgis import processing
 from qgis.core import (
+    Qgis,
+    QgsPoint,
     QgsField,
     QgsFields,
     QgsFeature,
@@ -176,49 +178,36 @@ class Propagation(QgsProcessingAlgorithm):
                 # is_child_algorithm=True,
             )
 
-            features_to_add = []
-            # # We try to define if the result polygons are left or right of the lines
-            for polygon in result["OUTPUT"].getFeatures():
-                new_feature = QgsFeature(fields)
-                new_feature.setGeometry(polygon.geometry())
-                attributes = polygon.attributes()
-                attributes.append(0) # acca_prob
 
-                for line in subset_propagation["OUTPUT"].getFeatures():
-                    distance = line.geometry().distance(polygon.geometry())
-                    feedback.pushInfo(f"{distance=}")
-                    # Line and geometry are touching
-                    if distance < 0.01:
+            lines = list(subset_propagation["OUTPUT"].getFeatures())
+            lines = sorted(lines, key=lambda line: -line[propagation_field])
+            features_to_add = []
+            already_added_polygons = []
+
+            for line in lines:
+                for polygon in result["OUTPUT"].getFeatures():
+                    if polygon in already_added_polygons:
+                        continue
+
+                    left = self.left_of_line(polygon, line)
+                    if left == False:
+                        new_feature = QgsFeature(fields)
+                        new_feature.setGeometry(polygon.geometry())
+                        attributes = polygon.attributes()
+                        attributes.append(0) # acca_prob
+
                         breaking_probability = polygon.attributes()[breaking_field_idx]
                         propagation_probability = line.attributes()[propagation_field_idx]
-
-                        left = self.left_of_line(polygon, line)
-                        feedback.pushInfo(f"{left=}")
-                        if left == False:
-                            acca_prob = domains.MATRIX_BREAKING[propagation_probability][breaking_probability]
-                            feedback.pushInfo(f"{acca_prob=}")
-                            if attributes[-1] < acca_prob:
-                                attributes.append(acca_prob)
-                            new_feature.setAttributes(attributes)
-
-                if attributes[-1] > 0:
-                    features_to_add.append(new_feature)
+                        acca_prob = domains.MATRIX_BREAKING[propagation_probability][breaking_probability]
+                        attributes[-1] = acca_prob
+                        new_feature.setAttributes(attributes)
+                        features_to_add.append(new_feature)
+                        already_added_polygons.append(polygon)
 
             sink.addFeatures(features_to_add)
         return {self.OUTPUT: dest_id}
 
     def left_of_line(self, poly, line):
-        line_geo = line.geometry().constGet()
-
-        # We check the first and second points
-        first_vertex = line_geo[0]
-        other_vertex = line_geo[1]
-
-        poly_centroid = poly.geometry().pointOnSurface().constGet()
-        left = QgsGeometryUtils.leftOfLine(poly_centroid.x(), poly_centroid.y(), first_vertex.x(), first_vertex.y(), other_vertex.x(), other_vertex.y())
-
-        if left < 0:
-            return True
-        elif left > 0:
-            return False
-        return None
+        # Expand the line on the left side and check if a point in the polygon is inside the buffer
+        buf = line.geometry().singleSidedBuffer(1000000, 4, Qgis.BufferSide.Left)
+        return buf.contains(poly.geometry().pointOnSurface())
