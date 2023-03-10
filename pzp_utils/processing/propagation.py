@@ -194,12 +194,14 @@ class Propagation(QgsProcessingAlgorithm):
                         new_feature = QgsFeature(fields)
                         new_feature.setGeometry(polygon.geometry())
                         attributes = polygon.attributes()
-                        attributes.append(0) # acca_prob
 
                         breaking_probability = polygon.attributes()[breaking_field_idx]
                         propagation_probability = line.attributes()[propagation_field_idx]
+
                         acca_prob = domains.MATRIX_BREAKING[propagation_probability][breaking_probability]
-                        attributes[-1] = acca_prob
+                        # attributes[-1] = acca_prob
+                        print(f"{acca_prob=}")
+                        attributes.append(acca_prob) # acca_prob
                         new_feature.setAttributes(attributes)
                         features_to_add.append(new_feature)
                         already_added_polygons.append(polygon)
@@ -209,5 +211,5 @@ class Propagation(QgsProcessingAlgorithm):
 
     def left_of_line(self, poly, line):
         # Expand the line on the left side and check if a point in the polygon is inside the buffer
-        buf = line.geometry().singleSidedBuffer(1000000, 4, Qgis.BufferSide.Left)
+        buf = line.geometry().singleSidedBuffer(1000000, 4, Qgis.SideLeft)
         return buf.contains(poly.geometry().pointOnSurface())
