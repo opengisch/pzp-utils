@@ -206,7 +206,7 @@ class DangerZones(QgsProcessingAlgorithm):
         )
 
         result = processing.run(
-            "native:deletecolumn",
+            "qgis:deletecolumn",
             {'INPUT': result["OUTPUT"],
              'COLUMN':['fid', 'layer', 'path'],
              "OUTPUT": parameters[self.OUTPUT],
