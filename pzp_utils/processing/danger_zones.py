@@ -8,6 +8,7 @@ from qgis.core import (
     QgsProcessingParameterFeatureSource,
     QgsProcessingParameterField,
     QgsProcessingParameterFeatureSink,
+    QgsApplication,
 )
 from qgis.PyQt.QtCore import QVariant
 
