@@ -26,6 +26,8 @@ class NoImpact(QgsProcessingAlgorithm):
     AREA_LAYER = "AREA_LAYER"
     INTENSITY_LAYER = "INTENSITY_LAYER"
     PERIOD_FIELD = "PERIOD_FIELD"
+    AREA_PROCESS_SOURCE_FIELD = "AREA_PROCESS_SOURCE_FIELD"
+    INTENSITY_PROCESS_SOURCE_FIELD = "INTENSITY_PROCESS_SOURCE_FIELD"
     INTENSITY_FIELD = "INTENSITY_FIELD"
     OUTPUT = "OUTPUT"
 
@@ -57,6 +59,16 @@ class NoImpact(QgsProcessingAlgorithm):
         )
 
         self.addParameter(
+            QgsProcessingParameterField(
+                name=self.AREA_PROCESS_SOURCE_FIELD,
+                description="Campo contenente la fonte del processo",
+                parentLayerParameterName=self.AREA_LAYER,
+                type=QgsProcessingParameterField.String,
+            )
+        )
+
+
+        self.addParameter(
             QgsProcessingParameterFeatureSource(
                 self.INTENSITY_LAYER,
                 "Layer con l'intensità",
@@ -83,6 +95,15 @@ class NoImpact(QgsProcessingAlgorithm):
         )
 
         self.addParameter(
+            QgsProcessingParameterField(
+                name=self.INTENSITY_PROCESS_SOURCE_FIELD,
+                description="Campo contenente la fonte del processo",
+                parentLayerParameterName=self.INTENSITY_LAYER,
+                type=QgsProcessingParameterField.String,
+            )
+        )
+
+        self.addParameter(
             QgsProcessingParameterFeatureSink(self.OUTPUT, "Nessun impatto")
         )
 
@@ -101,20 +122,36 @@ class NoImpact(QgsProcessingAlgorithm):
             context,
         )[0]
 
+        area_process_source_field = self.parameterAsFields(
+            parameters,
+            self.AREA_PROCESS_SOURCE_FIELD,
+            context,
+        )[0]
+
+        intensity_process_source_field = self.parameterAsFields(
+            parameters,
+            self.INTENSITY_PROCESS_SOURCE_FIELD,
+            context,
+        )[0]
+
         used_periods = set()
+        process_sources  = set()
 
         attributes = None
 
         period_field_idx = -1
         intensity_field_idx = -1
+        process_source_field_idx = -1
 
         one_feature = next(source.getFeatures())
         if one_feature:
             period_field_idx = one_feature.fieldNameIndex(period_field)
             intensity_field_idx = one_feature.fieldNameIndex(intensity_field)
+            process_source_idx = one_feature.fieldNameIndex(intensity_process_source_field)
 
         for feature in source.getFeatures():
             used_periods.add(feature[period_field])
+            process_sources.add(feature[intensity_process_source_field])
             attributes = feature.attributes()
 
         used_periods = sorted(used_periods, reverse=False)
@@ -131,50 +168,65 @@ class NoImpact(QgsProcessingAlgorithm):
             source.sourceCrs(),
         )
 
-        for period in used_periods:
-            result = processing.run(
-                "native:extractbyexpression",
-                {
-                    "INPUT": parameters[self.INTENSITY_LAYER],
-                    "EXPRESSION": f'"{period_field}" = {period}',
-                    "OUTPUT": "memory:",
-                },
-                context=context,
-                feedback=feedback,
-                is_child_algorithm=True,
-            )
+        for process_source in process_sources:
 
-            result = processing.run(
-                "native:difference",
-                {
-                    'INPUT': parameters[self.AREA_LAYER],
-                    'OVERLAY': result["OUTPUT"],
-                    'OUTPUT': "memory:",
-                    'GRID_SIZE':None,
-                },
-                context=context,
-                feedback=feedback,
-                is_child_algorithm=True,
-            )
+            for period in used_periods:
+                result = processing.run(
+                    "native:extractbyexpression",
+                    {
+                        "INPUT": parameters[self.INTENSITY_LAYER],
+                        "EXPRESSION": f'"{period_field}" = {period} AND "{intensity_process_source_field}" = \'{process_source}\'',
+                        "OUTPUT": "memory:",
+                    },
+                    context=context,
+                    feedback=feedback,
+                    is_child_algorithm=True,
+                )
 
-            result = processing.run(
-                "native:multiparttosingleparts",
-                {
-                    'INPUT': result["OUTPUT"],
-                    'OUTPUT': "memory:",
-                },
-                context=context,
-                feedback=feedback,
-                # is_child_algorithm=True,
-            )
+                area = processing.run(
+                    "native:extractbyexpression",
+                    {
+                        "INPUT": parameters[self.AREA_LAYER],
+                        "EXPRESSION": f'"{area_process_source_field}" = \'{process_source}\'',
+                        "OUTPUT": "memory:",
+                    },
+                    context=context,
+                    feedback=feedback,
+                    is_child_algorithm=True,
+                )
 
-            for feature in result["OUTPUT"].getFeatures():
-                attributes[period_field_idx] = period
-                attributes[intensity_field_idx] = 1000
+                result = processing.run(
+                    "native:difference",
+                    {
+                        'INPUT': area["OUTPUT"],
+                        'OVERLAY': result["OUTPUT"],
+                        'OUTPUT': "memory:",
+                        'GRID_SIZE':None,
+                    },
+                    context=context,
+                    feedback=feedback,
+                    is_child_algorithm=True,
+                )
 
-                feature.setAttributes(attributes)
+                result = processing.run(
+                    "native:multiparttosingleparts",
+                    {
+                        'INPUT': result["OUTPUT"],
+                        'OUTPUT': "memory:",
+                    },
+                    context=context,
+                    feedback=feedback,
+                    # is_child_algorithm=True,
+                )
 
-                # TODO rimuovere fid
-                sink.addFeature(feature)
+                for feature in result["OUTPUT"].getFeatures():
+                    attributes[period_field_idx] = period
+                    attributes[intensity_field_idx] = 1000
+                    # attributes[process_source_field_idx] = process_source
+
+                    feature.setAttributes(attributes)
+
+                    # TODO rimuovere fid
+                    sink.addFeature(feature)
 
         return {self.OUTPUT: dest_id}

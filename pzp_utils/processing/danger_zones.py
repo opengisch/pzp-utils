@@ -105,8 +105,6 @@ class DangerZones(QgsProcessingAlgorithm):
 
         for feature in source.getFeatures():
             process_sources.add(feature[process_source_field])
-
-        for feature in source.getFeatures():
             used_matrix_values.add(feature[matrix_field])
 
         used_matrix_values = sorted(used_matrix_values, reverse=True)
