@@ -17,6 +17,7 @@ class DangerZones(QgsProcessingAlgorithm):
 
     INPUT = "INPUT"
     MATRIX_FIELD = "MATRIX_FIELD"
+    PROCESS_SOURCE_FIELD = "PROCESS_SOURCE_FIELD"
     OUTPUT = "OUTPUT"
 
     def createInstance(self):
@@ -54,6 +55,15 @@ class DangerZones(QgsProcessingAlgorithm):
         )
 
         self.addParameter(
+            QgsProcessingParameterField(
+                name=self.PROCESS_SOURCE_FIELD,
+                description="Campo contenente la fonte del processo",
+                parentLayerParameterName=self.INPUT,
+                type=QgsProcessingParameterField.String,
+            )
+        )
+
+        self.addParameter(
             QgsProcessingParameterFeatureSink(self.OUTPUT, "Zone di pericolo")
         )
 
@@ -74,6 +84,12 @@ class DangerZones(QgsProcessingAlgorithm):
             context,
         )[0]
 
+        process_source_field = self.parameterAsFields(
+            parameters,
+            self.PROCESS_SOURCE_FIELD,
+            context,
+        )[0]
+
         # # Send some information to the user
         # feedback.pushInfo(f"CRS is {source.sourceCrs().authid()}")
 
@@ -83,12 +99,14 @@ class DangerZones(QgsProcessingAlgorithm):
         # Compute the number of steps to display within the progress bar and
         # total = 100.0 / source.featureCount() if source.featureCount() else 0
 
-        final_layer = None
 
         used_matrix_values = set()
+        process_sources  = set()
 
         for feature in source.getFeatures():
-            # name = feature["name"]
+            process_sources.add(feature[process_source_field])
+
+        for feature in source.getFeatures():
             used_matrix_values.add(feature[matrix_field])
 
         used_matrix_values = sorted(used_matrix_values, reverse=True)
@@ -100,58 +118,64 @@ class DangerZones(QgsProcessingAlgorithm):
             used_matrix_values[-1], used_matrix_values[-2] = used_matrix_values[-2], used_matrix_values[-1]
 
         feedback.pushInfo(f"Used matrix values {used_matrix_values}")
+        feedback.pushInfo(f"Process sources {process_sources}")
 
-        for matrix_value in used_matrix_values:
-            feedback.pushInfo(f'"{matrix_field}" = {matrix_value}')
-            result = processing.run(
-                "native:extractbyexpression",
-                {
-                    "INPUT": parameters[self.INPUT],
-                    "EXPRESSION": f'"{matrix_field}" = {matrix_value}',
-                    "OUTPUT": "memory:",
-                },
-                context=context,
-                feedback=feedback,
-                is_child_algorithm=True,
-            )
-            result = processing.run(
-                "native:dissolve",
-                {
-                    "INPUT": result["OUTPUT"],
-                    "FIELD": f"{matrix_field}",
-                    "SEPARATE_DISJOINT": True,
-                    "OUTPUT": "memory:",
-                },
-                context=context,
-                feedback=feedback,
-                is_child_algorithm=True,
-            )
-
-            if matrix_value == max(used_matrix_values):
-                final_layer = result["OUTPUT"]
-            else:
+        final_layer = None
+        for process_source in process_sources:
+            first_extraction_of_process = True
+            for matrix_value in used_matrix_values:
+                feedback.pushInfo(f'"{matrix_field}" = {matrix_value} AND "{process_source_field}" = \'{process_source}\'')
                 result = processing.run(
-                    "native:difference",
+                    "native:extractbyexpression",
+                    {
+                        "INPUT": parameters[self.INPUT],
+                        "EXPRESSION": f'"{matrix_field}" = {matrix_value} AND "{process_source_field}" = \'{process_source}\'',
+                        "OUTPUT": "memory:",
+                    },
+                    context=context,
+                    feedback=feedback,
+                    is_child_algorithm=True,
+                )
+                result = processing.run(
+                    "native:dissolve",
                     {
                         "INPUT": result["OUTPUT"],
-                        "OVERLAY": final_layer,
+                        "FIELD": f"{matrix_field}",
+                        "SEPARATE_DISJOINT": True,
                         "OUTPUT": "memory:",
                     },
                     context=context,
                     feedback=feedback,
                     is_child_algorithm=True,
                 )
-                result = processing.run(
-                    "native:mergevectorlayers",
-                    {
-                        "LAYERS": [result["OUTPUT"], final_layer],
-                        "OUTPUT": "memory:",
-                    },
-                    context=context,
-                    feedback=feedback,
-                    is_child_algorithm=True,
-                )
-                final_layer = result["OUTPUT"]
+
+                if not final_layer:
+                    final_layer = result["OUTPUT"]
+                else:
+                    if not first_extraction_of_process:
+                        result = processing.run(
+                            "native:difference",
+                            {
+                                "INPUT": result["OUTPUT"],
+                                "OVERLAY": final_layer,
+                                "OUTPUT": "memory:",
+                            },
+                            context=context,
+                            feedback=feedback,
+                            is_child_algorithm=True,
+                        )
+                        first_extraction_of_process = False
+                    result = processing.run(
+                        "native:mergevectorlayers",
+                        {
+                            "LAYERS": [result["OUTPUT"], final_layer],
+                            "OUTPUT": "memory:",
+                        },
+                        context=context,
+                        feedback=feedback,
+                        is_child_algorithm=True,
+                    )
+                    final_layer = result["OUTPUT"]
 
         # Apply very small negative buffer to remove artifacts
         result = processing.run(
