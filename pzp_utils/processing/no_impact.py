@@ -147,7 +147,7 @@ class NoImpact(QgsProcessingAlgorithm):
         if one_feature:
             period_field_idx = one_feature.fieldNameIndex(period_field)
             intensity_field_idx = one_feature.fieldNameIndex(intensity_field)
-            process_source_idx = one_feature.fieldNameIndex(intensity_process_source_field)
+            process_source_field_idx = one_feature.fieldNameIndex(intensity_process_source_field)
 
         for feature in source.getFeatures():
             used_periods.add(feature[period_field])
@@ -222,7 +222,7 @@ class NoImpact(QgsProcessingAlgorithm):
                 for feature in result["OUTPUT"].getFeatures():
                     attributes[period_field_idx] = period
                     attributes[intensity_field_idx] = 1000
-                    # attributes[process_source_field_idx] = process_source
+                    attributes[process_source_field_idx] = process_source
 
                     feature.setAttributes(attributes)
 
