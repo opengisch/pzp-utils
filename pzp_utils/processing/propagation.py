@@ -212,9 +212,9 @@ class Propagation(QgsProcessingAlgorithm):
     def left_of_line(self, poly, line):
         # Expand the line on the left side and check if a point in the polygon is inside the buffer
 
-        # singleSidedBuffer changed from QGIS 3.16 to 3.22 (the side args is not an int anymore
+        # singleSidedBuffer changed from QGIS 3.16 to 3.22 (the side args is not an int anymore)
         try:
             buf = line.geometry().singleSidedBuffer(1000000, 4, Qgis.BufferSide.Left)
         except:
-            buf = line.geometry().singleSidedBuffer(1000000, 4, Qgis.SideLeft)
+            buf = line.geometry().singleSidedBuffer(1000000, 4, 0)
         return buf.contains(poly.geometry().pointOnSurface())
