@@ -120,26 +120,58 @@ class DangerZones(QgsProcessingAlgorithm):
 
         final_layer = None
         for process_source in process_sources:
-            first_extraction_of_process = True
-            for matrix_value in used_matrix_values:
-                feedback.pushInfo(f'"{matrix_field}" = {matrix_value} AND "{process_source_field}" = \'{process_source}\'')
+            result = self.prepare_process_source(used_matrix_values, process_source, matrix_field, process_source_field, parameters, context, feedback)
+
+            if final_layer:
                 result = processing.run(
-                    "native:extractbyexpression",
+                    "native:mergevectorlayers",
                     {
-                        "INPUT": parameters[self.INPUT],
-                        "EXPRESSION": f'"{matrix_field}" = {matrix_value} AND "{process_source_field}" = \'{process_source}\'',
+                        "LAYERS": [result["OUTPUT"], final_layer],
                         "OUTPUT": "memory:",
                     },
                     context=context,
                     feedback=feedback,
                     is_child_algorithm=True,
                 )
+            final_layer = result["OUTPUT"]
+
+        return {self.OUTPUT: final_layer}
+
+
+    def prepare_process_source(self, used_matrix_values, process_source, matrix_field, process_source_field, parameters, context, feedback):
+        final_layer = None
+        for matrix_value in used_matrix_values:
+            feedback.pushInfo(f'"{matrix_field}" = {matrix_value} AND "{process_source_field}" = \'{process_source}\'')
+            result = processing.run(
+                "native:extractbyexpression",
+                {
+                    "INPUT": parameters[self.INPUT],
+                    "EXPRESSION": f'"{matrix_field}" = {matrix_value} AND "{process_source_field}" = \'{process_source}\'',
+                    "OUTPUT": "memory:",
+                },
+                context=context,
+                feedback=feedback,
+                is_child_algorithm=True,
+            )
+            result = processing.run(
+                "native:dissolve",
+                {
+                    "INPUT": result["OUTPUT"],
+                    "FIELD": f"{matrix_field}",
+                    "SEPARATE_DISJOINT": True,
+                    "OUTPUT": "memory:",
+                },
+                context=context,
+                feedback=feedback,
+                is_child_algorithm=True,
+            )
+
+            if final_layer:
                 result = processing.run(
-                    "native:dissolve",
+                    "native:difference",
                     {
                         "INPUT": result["OUTPUT"],
-                        "FIELD": f"{matrix_field}",
-                        "SEPARATE_DISJOINT": True,
+                        "OVERLAY": final_layer,
                         "OUTPUT": "memory:",
                     },
                     context=context,
@@ -147,33 +179,18 @@ class DangerZones(QgsProcessingAlgorithm):
                     is_child_algorithm=True,
                 )
 
-                if not final_layer:
-                    final_layer = result["OUTPUT"]
-                else:
-                    if not first_extraction_of_process:
-                        result = processing.run(
-                            "native:difference",
-                            {
-                                "INPUT": result["OUTPUT"],
-                                "OVERLAY": final_layer,
-                                "OUTPUT": "memory:",
-                            },
-                            context=context,
-                            feedback=feedback,
-                            is_child_algorithm=True,
-                        )
-                        first_extraction_of_process = False
-                    result = processing.run(
-                        "native:mergevectorlayers",
-                        {
-                            "LAYERS": [result["OUTPUT"], final_layer],
-                            "OUTPUT": "memory:",
-                        },
-                        context=context,
-                        feedback=feedback,
-                        is_child_algorithm=True,
-                    )
-                    final_layer = result["OUTPUT"]
+                result = processing.run(
+                    "native:mergevectorlayers",
+                    {
+                        "LAYERS": [result["OUTPUT"], final_layer],
+                        "OUTPUT": "memory:",
+                    },
+                    context=context,
+                    feedback=feedback,
+                    is_child_algorithm=True,
+                )
+
+            final_layer = result["OUTPUT"]
 
         # Apply very small negative buffer to remove artifacts
         result = processing.run(
@@ -228,7 +245,6 @@ class DangerZones(QgsProcessingAlgorithm):
             is_child_algorithm=True,
         )
 
-
         # qgis:deletecolumn has been renamed native:deletecolumn after qgis 3.16
         deletecolumn_id = "qgis:deletecolumn"
         if "qgis:deletecolumn" not in [x.id() for x in QgsApplication.processingRegistry().algorithms()]:
@@ -245,4 +261,4 @@ class DangerZones(QgsProcessingAlgorithm):
             is_child_algorithm=True,
         )
 
-        return {self.OUTPUT: result["OUTPUT"]}
+        return result
