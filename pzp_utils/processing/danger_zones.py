@@ -107,13 +107,13 @@ class DangerZones(QgsProcessingAlgorithm):
             process_sources.add(feature[process_source_field])
             used_matrix_values.add(feature[matrix_field])
 
-        used_matrix_values = sorted(used_matrix_values, reverse=True)
+        used_matrix_values = sorted(used_matrix_values, reverse=False)
 
-        # -10 in the matrix is logically bigger than 0
-        # -10 means "pericolo residuo", 0 is "non in pericolo"
-        # so we swap them
-        if 0 in used_matrix_values and -10 in used_matrix_values:
-            used_matrix_values[-1], used_matrix_values[-2] = used_matrix_values[-2], used_matrix_values[-1]
+        # The order of the codes is not the logical order of the values, 1000 (aka 0) should
+        # be at the end (after -10 too since is logically smaller i.e. -10 means "pericolo residuo", 0 is "non in pericolo"
+        if 1000 in used_matrix_values:
+            used_matrix_values.pop(0)  # Remove the '1000' element
+            used_matrix_values.append(1000)  # Insert '1000' at the end
 
         feedback.pushInfo(f"Used matrix values {used_matrix_values}")
         feedback.pushInfo(f"Process sources {process_sources}")

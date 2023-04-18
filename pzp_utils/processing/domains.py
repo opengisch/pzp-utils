@@ -94,339 +94,339 @@ MATRICES = {
     1110: [  # Alluvionamento Corso d'acqua minore
         1002,  # Intensità
         30,  # Periodo di ritorno
-        3,  # Valore nella matrice
+        1007,  # Valore nella matrice
         1003,  # Pericolo
         1002,
         100,
-        2,
+        1008,  # Valore nella matrice
         1002,
         1002,
         300,
-        1,
+        1009,  # Valore nella matrice
         1002,
         1002,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1003,
         30,
-        6,
+        1004,  # Valore nella matrice
         1003,
         1003,
         100,
-        5,
+        1005,  # Valore nella matrice
         1003,
         1003,
         300,
-        4,
+        1006,  # Valore nella matrice
         1003,
         1003,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1004,
         30,
-        9,
+        1001,  # Valore nella matrice
         1004,
         1004,
         100,
-        8,
+        1002,  # Valore nella matrice
         1004,
         1004,
         300,
-        7,
+        1003,  # Valore nella matrice
         1004,
         1004,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1000,
         99999,
-        0,
+        1000,  # Valore nella matrice
         1000,
     ],
     1120: [  # Alluvionamento Corso d'acqua principale
         1002,
         30,
-        3,
+        1007,  # Valore nella matrice
         1003,
         1002,
         100,
-        2,
+        1008,  # Valore nella matrice
         1002,
         1002,
         300,
-        1,
+        1009,  # Valore nella matrice
         1002,
         1002,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1003,
         30,
-        6,
+        1004,  # Valore nella matrice
         1003,
         1003,
         100,
-        5,
+        1005,  # Valore nella matrice
         1003,
         1003,
         300,
-        4,
+        1006,  # Valore nella matrice
         1003,
         1003,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1004,
         30,
-        9,
+        1001,  # Valore nella matrice
         1004,
         1004,
         100,
-        8,
+        1002,  # Valore nella matrice
         1004,
         1004,
         300,
-        7,
+        1003,  # Valore nella matrice
         1004,
         1004,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1000,
         99999,
-        0,
+        1000,  # Valore nella matrice
         1000,
     ],
     1200: [  # Flusso detrito
         1002,
         30,
-        3,
+        1007,  # Valore nella matrice
         1003,
         1002,
         100,
-        2,
+        1008,  # Valore nella matrice
         1002,
         1002,
         300,
-        1,
+        1009,  # Valore nella matrice
         1002,
         1002,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1003,
         30,
-        6,
+        1004,  # Valore nella matrice
         1003,
         1003,
         100,
-        5,
+        1005,  # Valore nella matrice
         1003,
         1003,
         300,
-        4,
+        1006,  # Valore nella matrice
         1002,
         1003,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1004,
         30,
-        9,
+        1001,  # Valore nella matrice
         1004,
         1004,
         100,
-        8,
+        1002,  # Valore nella matrice
         1004,
         1004,
         300,
-        7,
+        1003,  # Valore nella matrice
         1004,
         1004,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1000,
         99999,
-        0,
+        1000,  # Valore nella matrice
         1000,
     ],
     1400: [  # Ruscellamento superficiale
         1002,
         30,
-        3,
+        1007,  # Valore nella matrice
         1003,
         1002,
         100,
-        2,
+        1008,  # Valore nella matrice
         1002,
         1002,
         300,
-        1,
+        1009,  # Valore nella matrice
         1002,
         1002,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1003,
         30,
-        6,
+        1004,  # Valore nella matrice
         1003,
         1003,
         100,
-        5,
+        1005,  # Valore nella matrice
         1003,
         1003,
         300,
-        4,
+        1006,  # Valore nella matrice
         1003,
         1003,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1004,
         30,
-        9,
+        1001,  # Valore nella matrice
         1004,
         1004,
         100,
-        8,
+        1002,  # Valore nella matrice
         1004,
         1004,
         300,
-        7,
+        1003,  # Valore nella matrice
         1004,
         1004,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1000,
         99999,
-        0,
+        1000,  # Valore nella matrice
         1000,
     ],
     2001: [  # Scivolamento spontaneo
         1002,
         30,
-        3,
+        1007,  # Valore nella matrice
         1002,
         1002,
         100,
-        2,
+        1008,  # Valore nella matrice
         1002,
         1002,
         300,
-        1,
+        1009,  # Valore nella matrice
         1002,
         1002,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1003,
         30,
-        6,
+        1004,  # Valore nella matrice
         1003,
         1003,
         100,
-        5,
+        1005,  # Valore nella matrice
         1002,
         1003,
         300,
-        4,
+        1006,  # Valore nella matrice
         1002,
         1003,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1004,
         30,
-        9,
+        1001,  # Valore nella matrice
         1004,
         1004,
         100,
-        8,
+        1002,  # Valore nella matrice
         1004,
         1004,
         300,
-        7,
+        1003,  # Valore nella matrice
         1003,
         1004,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1000,
         99999,
-        0,
+        1000,  # Valore nella matrice
         1000,
     ],
     2002: [  # Colata detritica
         1002,
         30,
-        3,
+        1007,  # Valore nella matrice
         1002,
         1002,
         100,
-        2,
+        1008,  # Valore nella matrice
         1002,
         1002,
         300,
-        1,
+        1009,  # Valore nella matrice
         1002,
         1002,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1003,
         30,
-        6,
+        1004,  # Valore nella matrice
         1003,
         1003,
         100,
-        5,
+        1005,  # Valore nella matrice
         1002,
         1003,
         300,
-        4,
+        1006,  # Valore nella matrice
         1002,
         1003,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1004,
         30,
-        9,
+        1001,  # Valore nella matrice
         1004,
         1004,
         100,
-        8,
+        1002,  # Valore nella matrice
         1004,
         1004,
         300,
-        7,
+        1003,  # Valore nella matrice
         1003,
         1004,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1000,
         99999,
-        0,
+        1000,  # Valore nella matrice
         1000,
     ],
     3000: [  # Caduta sassi
         1002,
         30,
-        3,
+        1007,  # Valore nella matrice
         1003,
         1002,
         100,
-        2,
+        1008,  # Valore nella matrice
         1002,
         1002,
         300,
-        1,
+        1009,  # Valore nella matrice
         1002,
         1002,
         99999,
@@ -434,147 +434,147 @@ MATRICES = {
         1001,
         1003,
         30,
-        6,
+        1004,  # Valore nella matrice
         1003,
         1003,
         100,
-        5,
+        1005,  # Valore nella matrice
         1003,
         1003,
         300,
-        4,
+        1006,  # Valore nella matrice
         1002,
         1003,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1004,
         30,
-        9,
+        1001,  # Valore nella matrice
         1004,
         1004,
         100,
-        8,
+        1002,  # Valore nella matrice
         1004,
         1004,
         300,
-        7,
+        1003,  # Valore nella matrice
         1004,
         1004,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1000,
         99999,
-        0,
+        1000,  # Valore nella matrice
         1000,
     ],
     4100: [  # Valanga radente
         1002,
         30,
-        3,
+        1007,  # Valore nella matrice
         1004,
         1002,
         100,
-        2,
+        1008,  # Valore nella matrice
         1003,
         1002,
         300,
-        1,
+        1009,  # Valore nella matrice
         1003,
         1002,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1003,
         30,
-        6,
+        1004,  # Valore nella matrice
         1004,
         1003,
         100,
-        5,
+        1005,  # Valore nella matrice
         1003,
         1003,
         300,
-        4,
+        1006,  # Valore nella matrice
         1003,
         1003,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1004,
         30,
-        9,
+        1001,  # Valore nella matrice
         1004,
         1004,
         100,
-        8,
+        1002,  # Valore nella matrice
         1004,
         1004,
         300,
-        7,
+        1003,  # Valore nella matrice
         1004,
         1004,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1000,
         99999,
-        0,
+        1000,  # Valore nella matrice
         1000,
     ],
     4200: [  # Valanga polverosa
         1002,
         30,
-        3,
+        1007,  # Valore nella matrice
         1003,
         1002,
         100,
-        2,
+        1008,  # Valore nella matrice
         1002,
         1002,
         300,
-        1,
+        1009,  # Valore nella matrice
         1002,
         1002,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1003,
         30,
-        6,
+        1004,  # Valore nella matrice
         1004,
         1003,
         100,
-        5,
+        1005,  # Valore nella matrice
         1003,
         1003,
         300,
-        4,
+        1006,  # Valore nella matrice
         1003,
         1003,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1004,
         30,
-        9,
+        1001,  # Valore nella matrice
         1004,
         1004,
         100,
-        8,
+        1002,  # Valore nella matrice
         1004,
         1004,
         300,
-        7,
+        1003,  # Valore nella matrice
         1004,
         1004,
         99999,
-        -10,
+        1010,  # Valore nella matrice
         1001,
         1000,
         99999,
-        0,
+        1000,  # Valore nella matrice
         1000,
     ],
 }
