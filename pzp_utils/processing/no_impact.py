@@ -170,6 +170,9 @@ class NoImpact(QgsProcessingAlgorithm):
 
         for process_source in process_sources:
 
+            # Escape ' in process_source
+            process_source = process_source.replace("'", "''")
+
             for period in used_periods:
                 result = processing.run(
                     "native:extractbyexpression",
