@@ -139,6 +139,10 @@ class DangerZones(QgsProcessingAlgorithm):
 
 
     def prepare_process_source(self, used_matrix_values, process_source, matrix_field, process_source_field, parameters, context, feedback):
+
+        # Escape ' in process_source
+        process_source = process_source.replace("'", "''")
+
         final_layer = None
         for matrix_value in used_matrix_values:
             feedback.pushInfo(f'"{matrix_field}" = {matrix_value} AND "{process_source_field}" = \'{process_source}\'')
