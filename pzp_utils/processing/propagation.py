@@ -164,8 +164,6 @@ class Propagation(QgsProcessingAlgorithm):
                 # is_child_algorithm=True,
             )
 
-            subset_propagation_features = subset_propagation["OUTPUT"].getFeatures()
-
             result = processing.run(
                 "native:splitwithlines",
                 {
@@ -177,7 +175,6 @@ class Propagation(QgsProcessingAlgorithm):
                 feedback=feedback,
                 # is_child_algorithm=True,
             )
-
 
             lines = list(subset_propagation["OUTPUT"].getFeatures())
             lines = sorted(lines, key=lambda line: -line[propagation_field])
