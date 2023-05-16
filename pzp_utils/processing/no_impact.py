@@ -223,6 +223,8 @@ class NoImpact(QgsProcessingAlgorithm):
                 )
 
                 for feature in result["OUTPUT"].getFeatures():
+                    if feature.geometry().area() < 10:
+                        continue
                     attributes[period_field_idx] = period
                     attributes[intensity_field_idx] = 1000
                     attributes[process_source_field_idx] = process_source
