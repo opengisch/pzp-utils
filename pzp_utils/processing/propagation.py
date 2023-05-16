@@ -196,9 +196,9 @@ class Propagation(QgsProcessingAlgorithm):
                         propagation_probability = line.attributes()[propagation_field_idx]
 
                         acca_prob = domains.MATRIX_BREAKING[propagation_probability][breaking_probability]
-                        # attributes[-1] = acca_prob
-                        print(f"{acca_prob=}")
-                        attributes.append(acca_prob) # acca_prob
+
+                        print(f"{breaking_probability=}, {propagation_probability=}, {acca_prob=}")
+                        attributes.append(acca_prob)
                         new_feature.setAttributes(attributes)
                         features_to_add.append(new_feature)
                         already_added_polygons.append(polygon)
