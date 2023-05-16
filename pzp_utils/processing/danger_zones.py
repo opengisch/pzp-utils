@@ -112,7 +112,7 @@ class DangerZones(QgsProcessingAlgorithm):
         # The order of the codes is not the logical order of the values, 1000 (aka 0) should
         # be at the end (after -10 too since is logically smaller i.e. -10 means "pericolo residuo", 0 is "non in pericolo"
         if 1000 in used_matrix_values:
-            used_matrix_values.pop(0)  # Remove the '1000' element
+            used_matrix_values.remove(1000)  # Remove the '1000' element
             used_matrix_values.append(1000)  # Insert '1000' at the end
 
         feedback.pushInfo(f"Used matrix values {used_matrix_values}")
