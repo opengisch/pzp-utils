@@ -18,6 +18,7 @@ class RemoveOverlappings(QgsProcessingAlgorithm):
     INPUT = "INPUT"
     INTENSITY_FIELD = "INTENSITY_FIELD"
     PERIOD_FIELD = "PERIOD_FIELD"
+    SOURCE_FIELD = "SOURCE_FIELD"
     OUTPUT = "OUTPUT"
 
     def createInstance(self):
@@ -64,6 +65,15 @@ class RemoveOverlappings(QgsProcessingAlgorithm):
         )
 
         self.addParameter(
+            QgsProcessingParameterField(
+                name=self.SOURCE_FIELD,
+                description="Campo contenente la fonte del processo",
+                parentLayerParameterName=self.INPUT,
+                type=QgsProcessingParameterField.String,
+            )
+        )
+
+        self.addParameter(
             QgsProcessingParameterFeatureSink(self.OUTPUT, "Senza sovrapposizioni")
         )
 
@@ -87,35 +97,53 @@ class RemoveOverlappings(QgsProcessingAlgorithm):
             context,
         )[0]
 
+        source_field = self.parameterAsFields(
+            parameters,
+            self.SOURCE_FIELD,
+            context,
+        )[0]
+
         intensities = set()
         periods = set()
+        sources = set()
 
         for feature in source.getFeatures():
             intensities.add(feature[intensity_field])
             periods.add(feature[period_field])
+            sources.add(feature[source_field])
 
         intensities = sorted(intensities, reverse=True)
         periods = sorted(periods, reverse=True)
 
         final_layer = None
-        for period in periods:
-            result = self.prepare_period(intensities, intensity_field, period, period_field, parameters, context, feedback)
-            if final_layer:
-                result = processing.run(
-                    "native:mergevectorlayers",
-                    {
-                        "LAYERS": [result["OUTPUT"], final_layer],
-                        "OUTPUT": "memory:",
-                    },
-                    context=context,
-                    feedback=feedback,
-                    is_child_algorithm=True,
-                )
-            final_layer = result["OUTPUT"]
+        for source in sources:
+            for period in periods:
+                result = self.prepare_period(
+                    intensities,
+                    intensity_field,
+                    period,
+                    period_field,
+                    source,
+                    source_field,
+                    parameters,
+                    context,
+                    feedback)
+                if final_layer:
+                    result = processing.run(
+                        "native:mergevectorlayers",
+                        {
+                            "LAYERS": [result["OUTPUT"], final_layer],
+                            "OUTPUT": "memory:",
+                        },
+                        context=context,
+                        feedback=feedback,
+                        is_child_algorithm=True,
+                    )
+                final_layer = result["OUTPUT"]
 
         return {self.OUTPUT: final_layer}
 
-    def prepare_period(self, intensities, intensity_field, period, period_field, parameters, context, feedback):
+    def prepare_period(self, intensities, intensity_field, period, period_field, source, source_field, parameters, context, feedback):
 
         final_layer = None
         for intensity in intensities:
@@ -123,7 +151,7 @@ class RemoveOverlappings(QgsProcessingAlgorithm):
                 "native:extractbyexpression",
                 {
                     "INPUT": parameters[self.INPUT],
-                    "EXPRESSION": f'"{intensity_field}" = {intensity} AND "{period_field}" = \'{period}\'',
+                    "EXPRESSION": f'"{intensity_field}" = {intensity} AND "{period_field}" = \'{period}\' AND "{source_field}" = \'{source}\'',
                     "OUTPUT": "memory:",
                 },
                 context=context,

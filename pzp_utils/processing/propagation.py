@@ -20,9 +20,11 @@ class Propagation(QgsProcessingAlgorithm):
 
     BREAKING_LAYER = "BREAKING_LAYER"
     BREAKING_FIELD = "BREAKING_FIELD"
+    SOURCE_FIELD = "SOURCE_FIELD"
     PROPAGATION_LAYER = "PROPAGATION_LAYER"
     PROPAGATION_FIELD = "PROPAGATION_FIELD"
     BREAKING_FIELD_PROP = "BREAKING_FIELD_PROP"
+    SOURCE_FIELD_PROP = "SOURCE_FIELD_PROP"
     OUTPUT = "OUTPUT"
 
     def createInstance(self):
@@ -62,6 +64,15 @@ class Propagation(QgsProcessingAlgorithm):
         )
 
         self.addParameter(
+            QgsProcessingParameterField(
+                name=self.SOURCE_FIELD,
+                description="Campo contenente la fonte del processo",
+                parentLayerParameterName=self.BREAKING_LAYER,
+                type=QgsProcessingParameterField.String,
+            )
+        )
+
+        self.addParameter(
             QgsProcessingParameterFeatureSource(
                 self.PROPAGATION_LAYER,
                 "Layer con le linee di propagazione",
@@ -87,6 +98,15 @@ class Propagation(QgsProcessingAlgorithm):
             )
         )
 
+        self.addParameter(
+            QgsProcessingParameterField(
+                name=self.SOURCE_FIELD_PROP,
+                description="Campo contenente la fonte del processo",
+                parentLayerParameterName=self.PROPAGATION_LAYER,
+                type=QgsProcessingParameterField.String,
+            )
+        )
+
         self.addParameter(QgsProcessingParameterFeatureSink(
             self.OUTPUT, "Output layer"))
 
@@ -97,6 +117,12 @@ class Propagation(QgsProcessingAlgorithm):
             self.BREAKING_FIELD,
             context,
         )[0]
+        source_field = self.parameterAsFields(
+            parameters,
+            self.SOURCE_FIELD,
+            context,
+        )[0]
+
         propagation_layer = self.parameterAsVectorLayer(parameters, self.PROPAGATION_LAYER, context)
         propagation_field = self.parameterAsFields(
             parameters,
@@ -106,6 +132,11 @@ class Propagation(QgsProcessingAlgorithm):
         breaking_field_prop = self.parameterAsFields(
             parameters,
             self.BREAKING_FIELD_PROP,
+            context,
+        )[0]
+        source_field_prop = self.parameterAsFields(
+            parameters,
+            self.SOURCE_FIELD_PROP,
             context,
         )[0]
 
@@ -132,78 +163,82 @@ class Propagation(QgsProcessingAlgorithm):
         )
 
         used_breaking_values = set()
+        used_source_values = set()
         for feature in breaking_layer.getFeatures():
             used_breaking_values.add(feature[breaking_field])
+            used_source_values.add(feature[source_field])
 
         used_breaking_values = sorted(used_breaking_values, reverse=True)
 
         feedback.pushInfo(f"Used breaking values {used_breaking_values}")
+        feedback.pushInfo(f"Used source values {used_source_values}")
 
-        for breaking_value in used_breaking_values:
-            subset_breaking = processing.run(
-                "native:extractbyexpression",
-                {
-                    "INPUT": parameters[self.BREAKING_LAYER],
-                    "EXPRESSION": f'"{breaking_field}" = {breaking_value}',
-                    "OUTPUT": "memory:",
-                },
-                context=context,
-                feedback=feedback,
-                # is_child_algorithm=True,
-            )
+        for source_value in used_source_values:
+            for breaking_value in used_breaking_values:
+                subset_breaking = processing.run(
+                    "native:extractbyexpression",
+                    {
+                        "INPUT": parameters[self.BREAKING_LAYER],
+                        "EXPRESSION": f'"{breaking_field}" = {breaking_value} AND "{source_field}" = \'{source_value}\'',
+                        "OUTPUT": "memory:",
+                    },
+                    context=context,
+                    feedback=feedback,
+                    # is_child_algorithm=True,
+                )
 
-            subset_propagation = processing.run(
-                "native:extractbyexpression",
-                {
-                    "INPUT": parameters[self.PROPAGATION_LAYER],
-                    "EXPRESSION": f'"{breaking_field_prop}" = {breaking_value}',
-                    "OUTPUT": "memory:",
-                },
-                context=context,
-                feedback=feedback,
-                # is_child_algorithm=True,
-            )
+                subset_propagation = processing.run(
+                    "native:extractbyexpression",
+                    {
+                        "INPUT": parameters[self.PROPAGATION_LAYER],
+                        "EXPRESSION": f'"{breaking_field_prop}" = {breaking_value} AND "{source_field_prop}" = \'{source_value}\'',
+                        "OUTPUT": "memory:",
+                    },
+                    context=context,
+                    feedback=feedback,
+                    # is_child_algorithm=True,
+                )
 
-            result = processing.run(
-                "native:splitwithlines",
-                {
-                    'INPUT': subset_breaking["OUTPUT"],
-                    'LINES': subset_propagation["OUTPUT"],
-                    'OUTPUT': "memory:",
-                },
-                context=context,
-                feedback=feedback,
-                # is_child_algorithm=True,
-            )
+                result = processing.run(
+                    "native:splitwithlines",
+                    {
+                        'INPUT': subset_breaking["OUTPUT"],
+                        'LINES': subset_propagation["OUTPUT"],
+                        'OUTPUT': "memory:",
+                    },
+                    context=context,
+                    feedback=feedback,
+                    # is_child_algorithm=True,
+                )
 
-            lines = list(subset_propagation["OUTPUT"].getFeatures())
-            lines = sorted(lines, key=lambda line: -line[propagation_field])
-            features_to_add = []
-            already_added_polygons = []
+                lines = list(subset_propagation["OUTPUT"].getFeatures())
+                lines = sorted(lines, key=lambda line: -line[propagation_field])
+                features_to_add = []
+                already_added_polygons = []
 
-            for line in lines:
-                for polygon in result["OUTPUT"].getFeatures():
-                    if polygon in already_added_polygons:
-                        continue
+                for line in lines:
+                    for polygon in result["OUTPUT"].getFeatures():
+                        if polygon in already_added_polygons:
+                            continue
 
-                    left = self.left_of_line(polygon, line)
-                    if left == False:
-                        new_feature = QgsFeature(fields)
-                        new_feature.setGeometry(polygon.geometry())
-                        attributes = polygon.attributes()
+                        left = self.left_of_line(polygon, line)
+                        if left == False:
+                            new_feature = QgsFeature(fields)
+                            new_feature.setGeometry(polygon.geometry())
+                            attributes = polygon.attributes()
 
-                        breaking_probability = polygon.attributes()[breaking_field_idx]
-                        propagation_probability = line.attributes()[propagation_field_idx]
+                            breaking_probability = polygon.attributes()[breaking_field_idx]
+                            propagation_probability = line.attributes()[propagation_field_idx]
 
-                        acca_prob = domains.MATRIX_BREAKING[propagation_probability][breaking_probability]
+                            acca_prob = domains.MATRIX_BREAKING[propagation_probability][breaking_probability]
 
-                        print(f"{breaking_probability=}, {propagation_probability=}, {acca_prob=}")
-                        attributes.append(acca_prob)
-                        new_feature.setAttributes(attributes)
-                        features_to_add.append(new_feature)
-                        already_added_polygons.append(polygon)
+                            print(f"{breaking_probability=}, {propagation_probability=}, {acca_prob=}")
+                            attributes.append(acca_prob)
+                            new_feature.setAttributes(attributes)
+                            features_to_add.append(new_feature)
+                            already_added_polygons.append(polygon)
 
-            sink.addFeatures(features_to_add)
+                sink.addFeatures(features_to_add)
         return {self.OUTPUT: dest_id}
 
     def left_of_line(self, poly, line):
