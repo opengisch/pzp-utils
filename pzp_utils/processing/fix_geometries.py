@@ -54,7 +54,7 @@ class FixGeometries(QgsProcessingAlgorithm):
     def processAlgorithm(self, parameters, context, feedback):
 
         min_area_to_keep = 1
-        delete_holes_area = 1
+        delete_holes_area = 100
 
         result = processing.run(
             "native:snappointstogrid",
@@ -136,33 +136,21 @@ class FixGeometries(QgsProcessingAlgorithm):
         )
 
         result = processing.run(
-            "native:extractbyexpression",
-            {
-                'INPUT': result['OUTPUT'],
-                'EXPRESSION': f'$area >= {min_area_to_keep}',
-                'OUTPUT': 'memory:',
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        result = processing.run(
-            "native:deleteholes",
-            {
-                'INPUT': result['OUTPUT'],
-                'MIN_AREA': delete_holes_area,
-                'OUTPUT': 'memory:',
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        result = processing.run(
             "native:fixgeometries",
             {
                 'INPUT': result['OUTPUT'],
+                'OUTPUT': "memory:"
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        result = processing.run(
+            "pzp:merge_by_area",
+            {
+                'INPUT': result['OUTPUT'],
+                'MODE': 2,
                 'OUTPUT': parameters[self.OUTPUT],
             },
             context=context,
