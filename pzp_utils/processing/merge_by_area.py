@@ -1,3 +1,23 @@
+"""
+Derived from:
+
+***************************************************************************
+    EliminateSelection.py
+    ---------------------
+    Date                 : January 2017
+    Copyright         : (C) 2017 by Bernhard Ströbl
+    Email                : bernhard.stroebl@jena.de
+***************************************************************************
+*                                                                         *
+*   This program is free software; you can redistribute it and/or modify  *
+*   it under the terms of the GNU General Public License as published by  *
+*   the Free Software Foundation; either version 2 of the License, or     *
+*   (at your option) any later version.                                   *
+*                                                                         *
+***************************************************************************
+"""
+
+
 import os
 
 from qgis.PyQt.QtGui import QIcon
@@ -38,9 +58,6 @@ class MergeByArea(QgisAlgorithm):
 
     def __init__(self):
         super().__init__()
-
-    # def flags(self):
-    #     return super().flags() | QgsProcessingAlgorithm.FlagNoThreading | QgsProcessingAlgorithm.FlagNotAvailableInStandaloneTool
 
     def initAlgorithm(self, config=None):
         self.modes = [self.tr('Largest Area'),
