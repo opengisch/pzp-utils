@@ -1,0 +1,62 @@
+exclude: |
+  (?x)^(
+      pzp/ui/resources.py|
+      pzp/data/.*
+  )$
+
+repos:
+  # Fix end of files
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args:
+          - "--fix=lf"
+
+  # Prettier
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.0.0-alpha.4
+    hooks:
+      - id: prettier
+
+  # Remove unused imports/variables
+  - repo: git@github.com:myint/autoflake.git
+    rev: v2.0.2
+    hooks:
+      - id: autoflake
+        args:
+          - "--in-place"
+          - "--remove-all-unused-imports"
+          - "--remove-unused-variable"
+
+  # Sort imports
+  - repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        args:
+          - -m
+          - "3"
+          - -l
+          - "88"
+          - --trailing-comma
+          - --known-local-folder
+          - coanse
+
+  # Black formatting
+  - repo: https://github.com/psf/black
+    rev: 23.1.0
+    hooks:
+      - id: black
+        args: ["--line-length", "120"]
+
+  # Python flake8
+  - repo: https://github.com/pycqa/flake8
+    rev: "5.0.4"
+    hooks:
+      - id: flake8
+        args:
+          - --ignore=E203,E402,E501,W291,W503
+          - --max-line-length=120
