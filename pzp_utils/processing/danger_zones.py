@@ -1,20 +1,19 @@
 from qgis import processing
 from qgis.core import (
+    QgsApplication,
     QgsField,
     QgsFields,
     QgsProcessing,
     QgsProcessingAlgorithm,
     QgsProcessingException,
+    QgsProcessingParameterFeatureSink,
     QgsProcessingParameterFeatureSource,
     QgsProcessingParameterField,
-    QgsProcessingParameterFeatureSink,
-    QgsApplication,
 )
 from qgis.PyQt.QtCore import QVariant
 
 
 class DangerZones(QgsProcessingAlgorithm):
-
     INPUT = "INPUT"
     MATRIX_FIELD = "MATRIX_FIELD"
     PROCESS_SOURCE_FIELD = "PROCESS_SOURCE_FIELD"
@@ -40,9 +39,7 @@ class DangerZones(QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFeatureSource(
-                self.INPUT, "Input layer", [QgsProcessing.TypeVectorPolygon]
-            )
+            QgsProcessingParameterFeatureSource(self.INPUT, "Input layer", [QgsProcessing.TypeVectorPolygon])
         )
 
         self.addParameter(
@@ -63,17 +60,13 @@ class DangerZones(QgsProcessingAlgorithm):
             )
         )
 
-        self.addParameter(
-            QgsProcessingParameterFeatureSink(self.OUTPUT, "Zone di pericolo")
-        )
+        self.addParameter(QgsProcessingParameterFeatureSink(self.OUTPUT, "Zone di pericolo"))
 
     def processAlgorithm(self, parameters, context, feedback):
         source = self.parameterAsSource(parameters, self.INPUT, context)
 
         if source is None:
-            raise QgsProcessingException(
-                self.invalidSourceError(parameters, self.INPUT)
-            )
+            raise QgsProcessingException(self.invalidSourceError(parameters, self.INPUT))
 
         fields = QgsFields()
         fields.append(QgsField("Grado di pericolo", QVariant.Int))
@@ -99,9 +92,8 @@ class DangerZones(QgsProcessingAlgorithm):
         # Compute the number of steps to display within the progress bar and
         # total = 100.0 / source.featureCount() if source.featureCount() else 0
 
-
         used_matrix_values = set()
-        process_sources  = set()
+        process_sources = set()
 
         for feature in source.getFeatures():
             process_sources.add(feature[process_source_field])
@@ -120,7 +112,9 @@ class DangerZones(QgsProcessingAlgorithm):
 
         final_layer = None
         for process_source in process_sources:
-            result = self.prepare_process_source(used_matrix_values, process_source, matrix_field, process_source_field, parameters, context, feedback)
+            result = self.prepare_process_source(
+                used_matrix_values, process_source, matrix_field, process_source_field, parameters, context, feedback
+            )
 
             if final_layer:
                 result = processing.run(
@@ -137,9 +131,9 @@ class DangerZones(QgsProcessingAlgorithm):
 
         return {self.OUTPUT: final_layer}
 
-
-    def prepare_process_source(self, used_matrix_values, process_source, matrix_field, process_source_field, parameters, context, feedback):
-
+    def prepare_process_source(
+        self, used_matrix_values, process_source, matrix_field, process_source_field, parameters, context, feedback
+    ):
         # Escape ' in process_source
         process_source = process_source.replace("'", "''")
 
@@ -196,52 +190,10 @@ class DangerZones(QgsProcessingAlgorithm):
 
             final_layer = result["OUTPUT"]
 
-        # Apply very small negative buffer to remove artifacts
-        result = processing.run(
-            "native:buffer",
-            {
-                "INPUT": final_layer,
-                "DISTANCE": -0.0000001,
-                "OUTPUT": "memory:",
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-        # Snap to layer
-        result = processing.run(
-            "native:snapgeometries",
-            {
-                "INPUT": result["OUTPUT"],
-                "REFERENCE_LAYER": result["OUTPUT"],
-                "TOLERANCE": 0.1,
-                "BEHAVIOR": 0,
-                "OUTPUT": "memory:",
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-        # Snap to grid
-        result = processing.run(
-            "native:snappointstogrid",
-            {
-                "INPUT": result["OUTPUT"],
-                "HSPACING": 0.001,
-                "MSPACING": 0,
-                "VSPACING": 0.001,
-                "ZSPACING": 0,
-                "OUTPUT": "memory:",
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
         result = processing.run(
             "native:multiparttosingleparts",
             {
-                'INPUT': result["OUTPUT"],
+                "INPUT": final_layer,
                 "OUTPUT": "memory:",
             },
             context=context,
@@ -256,10 +208,11 @@ class DangerZones(QgsProcessingAlgorithm):
 
         result = processing.run(
             deletecolumn_id,
-            {'INPUT': result["OUTPUT"],
-             'COLUMN':['fid', 'layer', 'path'],
-             "OUTPUT": parameters[self.OUTPUT],
-             },
+            {
+                "INPUT": result["OUTPUT"],
+                "COLUMN": ["fid", "layer", "path"],
+                "OUTPUT": parameters[self.OUTPUT],
+            },
             context=context,
             feedback=feedback,
             is_child_algorithm=True,
