@@ -22,15 +22,13 @@ import os
 
 from qgis.PyQt.QtGui import QIcon
 
-from qgis.core import (QgsApplication,
-                       QgsFeatureRequest,
+from qgis.core import (QgsFeatureRequest,
                        QgsFeature,
                        QgsFeatureSink,
                        QgsGeometry,
-                       QgsProcessingAlgorithm,
                        QgsProcessingException,
                        QgsProcessingUtils,
-                       QgsProcessingParameterVectorLayer,
+                       QgsProcessingParameterField,
                        QgsProcessingParameterEnum,
                        QgsProcessing,
                        QgsProcessingParameterFeatureSink,
@@ -45,10 +43,12 @@ class MergeByArea(QgisAlgorithm):
     INPUT = 'INPUT'
     OUTPUT = 'OUTPUT'
     MODE = 'MODE'
+    VALUE_FIELD = 'VALUE_FIELD'
 
     MODE_LARGEST_AREA = 0
     MODE_SMALLEST_AREA = 1
     MODE_BOUNDARY = 2
+    MODE_HIGHEST_VALUE = 3
 
     def group(self):
         return "Algoritmi"
@@ -62,7 +62,8 @@ class MergeByArea(QgisAlgorithm):
     def initAlgorithm(self, config=None):
         self.modes = [self.tr('Largest Area'),
                       self.tr('Smallest Area'),
-                      self.tr('Largest Common Boundary')]
+                      self.tr('Largest Common Boundary'),
+                      self.tr('Highest Value')]
 
         self.addParameter(
             QgsProcessingParameterFeatureSource(
@@ -76,6 +77,16 @@ class MergeByArea(QgisAlgorithm):
                 self.MODE,
                 self.tr('Merge selection with the neighbouring polygon with the'),
                 options=self.modes)
+        )
+
+        self.addParameter(
+            QgsProcessingParameterField(
+                name=self.VALUE_FIELD,
+                description="Campo contenente il valore (per esempio intensità)",
+                parentLayerParameterName=self.INPUT,
+                type=QgsProcessingParameterField.Numeric,
+                optional=True,
+            )
         )
 
         self.addParameter(
@@ -93,8 +104,13 @@ class MergeByArea(QgisAlgorithm):
 
     def processAlgorithm(self, parameters, context, feedback):
         inLayer = self.parameterAsSource(parameters, self.INPUT, context)
-        boundary = self.parameterAsEnum(parameters, self.MODE, context) == self.MODE_BOUNDARY
-        smallestArea = self.parameterAsEnum(parameters, self.MODE, context) == self.MODE_SMALLEST_AREA
+        mode = self.parameterAsEnum(parameters, self.MODE, context)
+        valueField = self.parameterAsFields(parameters, self.VALUE_FIELD, context)
+
+        if mode == self.MODE_HIGHEST_VALUE and not valueField:
+            raise QgsProcessingException(
+                self.tr("When mode is '{0}', the '{1}' parameter must be specified.").format(self.modes[mode], self.VALUE_FIELD)
+                )
 
         featToEliminate = []
 
@@ -147,8 +163,7 @@ class MergeByArea(QgisAlgorithm):
                     QgsFeatureRequest().setFilterRect(bbox).setSubsetOfAttributes([]))
                 mergeWithFid = None
                 mergeWithGeom = None
-                max = 0
-                min = -1
+                max = None
                 selFeat = QgsFeature()
 
                 # use prepared geometries for faster intersection tests
@@ -165,55 +180,61 @@ class MergeByArea(QgisAlgorithm):
                         # We have a candidate
                         iGeom = geom2Eliminate.intersection(selGeom)
 
+                        # We need a common boundary in order to merge
                         if not iGeom:
                             continue
 
-                        if boundary:
+                        selValue = None
+                        if mode == self.MODE_BOUNDARY:
                             selValue = iGeom.length()
-                        else:
-                            # area. We need a common boundary in
-                            # order to merge
-                            if 0 < iGeom.length():
-                                selValue = selGeom.area()
-                            else:
-                                selValue = -1
 
-                        if -1 != selValue:
+                        elif mode == self.MODE_LARGEST_AREA:
+                            selValue = selGeom.area()
+
+                        elif mode == self.MODE_SMALLEST_AREA:
+                            selValue = selGeom.area() * -1
+
+                        elif mode == self.MODE_HIGHEST_VALUE:
+                            # Get value of neighbors polygon
+                            selValue = selFeat[valueField[0]]
+
+                        else:
+                            raise QgsProcessingException(
+                                self.tr("Invalid value '{0}' for parameter '{1}'").format(mode, self.MODE)
+                                )
+
+                        if selValue is None:
+                            # No candidate found
+                            continue
+
+                        useThis = False
+                        if max is None:
+                            max = selValue
+                            useThis = True
+                        elif selValue > max:
+                            max = selValue
                             useThis = True
 
-                            if smallestArea:
-                                if -1 == min:
-                                    min = selValue
-                                else:
-                                    if selValue < min:
-                                        min = selValue
-                                    else:
-                                        useThis = False
-                            else:
-                                if selValue > max:
-                                    max = selValue
-                                else:
-                                    useThis = False
-
-                            if useThis:
-                                mergeWithFid = selFeat.id()
-                                mergeWithGeom = QgsGeometry(selGeom)
+                        if useThis:
+                            mergeWithFid = selFeat.id()
+                            mergeWithGeom = QgsGeometry(selGeom)
                 # End while fit
 
-                if mergeWithFid is not None:
-                    # A successful candidate
-                    newGeom = mergeWithGeom.combine(geom2Eliminate)
-
-                    if processLayer.changeGeometry(mergeWithFid, newGeom):
-                        madeProgress = True
-                    else:
-                        raise QgsProcessingException(
-                            self.tr('Could not replace geometry of feature with id {0}').format(mergeWithFid))
-
-                    start = start + add
-                    feedback.setProgress(start)
-                else:
+                if mergeWithFid is None:
                     featNotEliminated.append(feat)
+                    continue
+
+                # A successful candidate
+                newGeom = mergeWithGeom.combine(geom2Eliminate)
+
+                if processLayer.changeGeometry(mergeWithFid, newGeom):
+                    madeProgress = True
+                else:
+                    raise QgsProcessingException(
+                        self.tr('Could not replace geometry of feature with id {0}').format(mergeWithFid))
+
+                start = start + add
+                feedback.setProgress(start)
 
             # End for featToEliminate
 
