@@ -20,12 +20,14 @@ Derived from:
 
 import os
 
+from qgis.PyQt.QtCore import QObject
 from qgis.PyQt.QtGui import QIcon
 
 from qgis.core import (QgsFeatureRequest,
                        QgsFeature,
                        QgsFeatureSink,
                        QgsGeometry,
+                       QgsProcessingAlgorithm,
                        QgsProcessingException,
                        QgsProcessingUtils,
                        QgsProcessingParameterField,
@@ -34,12 +36,11 @@ from qgis.core import (QgsFeatureRequest,
                        QgsProcessingParameterFeatureSink,
                        QgsProcessingParameterFeatureSource)
 
-from processing.algs.qgis.QgisAlgorithm import QgisAlgorithm
 
 pluginPath = os.path.split(os.path.split(os.path.dirname(__file__))[0])[0]
 
 
-class MergeByArea(QgisAlgorithm):
+class MergeByArea(QgsProcessingAlgorithm):
     INPUT = 'INPUT'
     OUTPUT = 'OUTPUT'
     MODE = 'MODE'
@@ -60,22 +61,22 @@ class MergeByArea(QgisAlgorithm):
         super().__init__()
 
     def initAlgorithm(self, config=None):
-        self.modes = [self.tr('Largest Area'),
-                      self.tr('Smallest Area'),
-                      self.tr('Largest Common Boundary'),
-                      self.tr('Highest Value')]
+        self.modes = ['Area maggiore',
+                      'Area minore',
+                      'Maggiore comun perimetro',
+                      'Valore piu alto']
 
         self.addParameter(
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
-                self.tr('Input layer'),
+                'Layer in entrata',
                 [QgsProcessing.TypeVectorPolygon])
         )
 
         self.addParameter(
             QgsProcessingParameterEnum(
                 self.MODE,
-                self.tr('Merge selection with the neighbouring polygon with the'),
+                'Unisci la selezione con il poligono vicino con il',
                 options=self.modes)
         )
 
@@ -92,9 +93,13 @@ class MergeByArea(QgisAlgorithm):
         self.addParameter(
             QgsProcessingParameterFeatureSink(
                 self.OUTPUT,
-                self.tr('Eliminated'),
+                'Eliminato',
                 QgsProcessing.TypeVectorPolygon)
         )
+
+
+    def createInstance(self):
+        return MergeByArea()
 
     def name(self):
         return 'merge_by_area'
@@ -109,7 +114,7 @@ class MergeByArea(QgisAlgorithm):
 
         if mode == self.MODE_HIGHEST_VALUE and not valueField:
             raise QgsProcessingException(
-                self.tr("When mode is '{0}', the '{1}' parameter must be specified.").format(self.modes[mode], self.VALUE_FIELD)
+                "Quando mode è '{0}', il parametro '{1}' deve essere specificato.".format(self.modes[mode], self.VALUE_FIELD)
                 )
 
         featToEliminate = []
@@ -200,7 +205,7 @@ class MergeByArea(QgisAlgorithm):
 
                         else:
                             raise QgsProcessingException(
-                                self.tr("Invalid value '{0}' for parameter '{1}'").format(mode, self.MODE)
+                                "Valore '{0}' invalido per il parametro '{1}'".format(mode, self.MODE)
                                 )
 
                         if selValue is None:
@@ -231,7 +236,7 @@ class MergeByArea(QgisAlgorithm):
                     madeProgress = True
                 else:
                     raise QgsProcessingException(
-                        self.tr('Could not replace geometry of feature with id {0}').format(mergeWithFid))
+                        'Non posso rimpiazzare la geometria della feature con id {0}'.format(mergeWithFid))
 
                 start = start + add
                 feedback.setProgress(start)
@@ -242,7 +247,7 @@ class MergeByArea(QgisAlgorithm):
 
         # End while
         if not processLayer.commitChanges():
-            raise QgsProcessingException(self.tr('Could not commit changes'))
+            raise QgsProcessingException('Errore durante il committ dei cambiamenti')
 
         for feature in featNotEliminated:
             if feedback.isCanceled():
