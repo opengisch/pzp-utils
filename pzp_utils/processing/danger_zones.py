@@ -110,10 +110,31 @@ class DangerZones(QgsProcessingAlgorithm):
         feedback.pushInfo(f"Used matrix values {used_matrix_values}")
         feedback.pushInfo(f"Process sources {process_sources}")
 
+        result = processing.run(
+            "native:dissolve",
+            {
+                "INPUT": parameters[self.INPUT],
+                "FIELD": f"{matrix_field}",
+                "SEPARATE_DISJOINT": True,
+                "OUTPUT": "memory:",
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+        input_layer = result["OUTPUT"]
+
         final_layer = None
         for process_source in process_sources:
             result = self.prepare_process_source(
-                used_matrix_values, process_source, matrix_field, process_source_field, parameters, context, feedback
+                input_layer,
+                used_matrix_values,
+                process_source,
+                matrix_field,
+                process_source_field,
+                parameters,
+                context,
+                feedback,
             )
 
             if final_layer:
@@ -132,7 +153,15 @@ class DangerZones(QgsProcessingAlgorithm):
         return {self.OUTPUT: final_layer}
 
     def prepare_process_source(
-        self, used_matrix_values, process_source, matrix_field, process_source_field, parameters, context, feedback
+        self,
+        input_layer,
+        used_matrix_values,
+        process_source,
+        matrix_field,
+        process_source_field,
+        parameters,
+        context,
+        feedback,
     ):
         # Escape ' in process_source
         process_source = process_source.replace("'", "''")
@@ -143,7 +172,7 @@ class DangerZones(QgsProcessingAlgorithm):
             result = processing.run(
                 "native:extractbyexpression",
                 {
-                    "INPUT": parameters[self.INPUT],
+                    "INPUT": input_layer,
                     "EXPRESSION": f'"{matrix_field}" = {matrix_value} AND "{process_source_field}" = \'{process_source}\'',
                     "OUTPUT": "memory:",
                 },
