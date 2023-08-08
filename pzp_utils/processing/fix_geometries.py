@@ -51,17 +51,17 @@ class FixGeometries(QgsProcessingAlgorithm):
             is_child_algorithm=True,
         )
 
-        result = processing.run(
-            "pzp:merge_by_area",
-            {
-                "INPUT": result["OUTPUT"],
-                "MODE": 2,
-                "OUTPUT": parameters[self.OUTPUT],
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
+        # result = processing.run(
+        #     "pzp:merge_by_area",
+        #     {
+        #         "INPUT": result["OUTPUT"],
+        #         "MODE": 2,
+        #         "OUTPUT": parameters[self.OUTPUT],
+        #     },
+        #     context=context,
+        #     feedback=feedback,
+        #     is_child_algorithm=True,
+        # )
 
         result = processing.run(
             "native:snappointstogrid",

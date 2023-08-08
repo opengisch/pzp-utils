@@ -173,7 +173,7 @@ class DangerZones(QgsProcessingAlgorithm):
         count = 0
 
         for matrix_value in used_matrix_values:
-            if count > 7:
+            if count > 15:
                 break
 
             count += 1
@@ -239,10 +239,41 @@ class DangerZones(QgsProcessingAlgorithm):
                 )
 
                 result = processing.run(
+                    "native:fixgeometries",
+                    {"INPUT": result["OUTPUT"], "OUTPUT": "memory:"},
+                    context=context,
+                    feedback=feedback,
+                    is_child_algorithm=True,
+                )
+
+                result = processing.run(
                     "pzp:merge_by_area",
                     {
                         "INPUT": result["OUTPUT"],
-                        "MODE": MergeByArea.MODE_LARGEST_AREA,
+                        "MODE": MergeByArea.MODE_BOUNDARY,
+                        "OUTPUT": "memory:",
+                    },
+                    context=context,
+                    feedback=feedback,
+                    is_child_algorithm=True,
+                )
+
+                result = processing.run(
+                    "native:multiparttosingleparts",
+                    {
+                        "INPUT": result["OUTPUT"],
+                        "OUTPUT": "memory:",
+                    },
+                    context=context,
+                    feedback=feedback,
+                    is_child_algorithm=True,
+                )
+
+                # Workaround to re-remove small invalid parts that comes back after multi to single
+                result = processing.run(
+                    "pzp:remove_by_area",
+                    {
+                        "INPUT": result["OUTPUT"],
                         "OUTPUT": "memory:",
                     },
                     context=context,

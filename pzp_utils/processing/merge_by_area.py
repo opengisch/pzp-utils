@@ -233,7 +233,7 @@ class MergeByArea(QgisAlgorithm):
                             mergeWithGeom = QgsGeometry(selGeom)
                 # End while fit
 
-                print("Error: could not merge feature: {}".format(feature))
+                print(f"mergeWithFid: {mergeWithFid}")
 
                 if mergeWithFid is None:
                     featNotEliminated.append(feat)
