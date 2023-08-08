@@ -199,7 +199,17 @@ class MergeByArea(QgisAlgorithm):
                         elif mode == self.MODE_HIGHEST_MATRIX_VALUE:
                             # Get value of neighbors polygon
                             selValue = selFeat[valueField[0]]
-                            print(f"selfValue: {selValue}")
+
+                            print(f"selFeat: {selFeat.attributes()}")
+                            print(f"selFeat: {selFeat.fields().names()}")
+
+                            if not selValue:
+                                continue
+
+                            selValue = selValue * -1
+
+                            if selValue == -1000:
+                                selValue = -1011
 
                         else:
                             raise QgsProcessingException(
@@ -254,7 +264,7 @@ class MergeByArea(QgisAlgorithm):
             if feedback.isCanceled():
                 break
 
-            print("Error: could not merge feature: {}".format(feature))
+            print("Error: could not merge feature: {}".format(feature.id()))
 
             processLayer.dataProvider().addFeature(feature, QgsFeatureSink.FastInsert)
 

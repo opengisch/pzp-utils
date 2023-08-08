@@ -12,6 +12,8 @@ from qgis.core import (
 )
 from qgis.PyQt.QtCore import QVariant
 
+from pzp_utils.processing.merge_by_area import MergeByArea
+
 
 class DangerZones(QgsProcessingAlgorithm):
     INPUT = "INPUT"
@@ -167,7 +169,15 @@ class DangerZones(QgsProcessingAlgorithm):
         process_source = process_source.replace("'", "''")
 
         final_layer = None
+
+        count = 0
+
         for matrix_value in used_matrix_values:
+            if count > 7:
+                break
+
+            count += 1
+
             feedback.pushInfo(f'"{matrix_field}" = {matrix_value} AND "{process_source_field}" = \'{process_source}\'')
             result = processing.run(
                 "native:extractbyexpression",
@@ -180,18 +190,18 @@ class DangerZones(QgsProcessingAlgorithm):
                 feedback=feedback,
                 is_child_algorithm=True,
             )
-            result = processing.run(
-                "native:dissolve",
-                {
-                    "INPUT": result["OUTPUT"],
-                    "FIELD": f"{matrix_field}",
-                    "SEPARATE_DISJOINT": True,
-                    "OUTPUT": "memory:",
-                },
-                context=context,
-                feedback=feedback,
-                is_child_algorithm=True,
-            )
+            # result = processing.run(
+            #     "native:dissolve",
+            #     {
+            #         "INPUT": result["OUTPUT"],
+            #         "FIELD": f"{matrix_field}",
+            #         "SEPARATE_DISJOINT": True,
+            #         "OUTPUT": "memory:",
+            #     },
+            #     context=context,
+            #     feedback=feedback,
+            #     is_child_algorithm=True,
+            # )
 
             if final_layer:
                 result = processing.run(
@@ -217,6 +227,29 @@ class DangerZones(QgsProcessingAlgorithm):
                     is_child_algorithm=True,
                 )
 
+                result = processing.run(
+                    "native:multiparttosingleparts",
+                    {
+                        "INPUT": result["OUTPUT"],
+                        "OUTPUT": "memory:",
+                    },
+                    context=context,
+                    feedback=feedback,
+                    is_child_algorithm=True,
+                )
+
+                result = processing.run(
+                    "pzp:merge_by_area",
+                    {
+                        "INPUT": result["OUTPUT"],
+                        "MODE": MergeByArea.MODE_LARGEST_AREA,
+                        "OUTPUT": "memory:",
+                    },
+                    context=context,
+                    feedback=feedback,
+                    is_child_algorithm=True,
+                )
+
             final_layer = result["OUTPUT"]
 
         result = processing.run(
@@ -229,6 +262,30 @@ class DangerZones(QgsProcessingAlgorithm):
             feedback=feedback,
             is_child_algorithm=True,
         )
+
+        # result = processing.run(
+        #     "pzp:merge_by_area",
+        #     {
+        #         "INPUT": result["OUTPUT"],
+        #         "MODE": MergeByArea.MODE_LARGEST_AREA,
+        #         "OUTPUT": "memory",
+        #     },
+        #     context=context,
+        #     feedback=feedback,
+        #     is_child_algorithm=True,
+        # )
+
+        # result = processing.run(
+        #     "pzp:merge_by_area",
+        #     {
+        #         "INPUT": result["OUTPUT"],
+        #         "MODE": MergeByArea.MODE_LARGEST_AREA,
+        #         "OUTPUT": "memory:",
+        #     },
+        #     context=context,
+        #     feedback=feedback,
+        #     is_child_algorithm=True,
+        # )
 
         # qgis:deletecolumn has been renamed native:deletecolumn after qgis 3.16
         deletecolumn_id = "qgis:deletecolumn"
