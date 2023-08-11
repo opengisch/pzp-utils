@@ -20,35 +20,35 @@ Derived from:
 
 import os
 
-from qgis.PyQt.QtGui import QIcon
-
-from qgis.core import (QgsFeatureRequest,
-                       QgsFeature,
-                       QgsFeatureSink,
-                       QgsGeometry,
-                       QgsProcessingException,
-                       QgsProcessingUtils,
-                       QgsProcessingParameterField,
-                       QgsProcessingParameterEnum,
-                       QgsProcessing,
-                       QgsProcessingParameterFeatureSink,
-                       QgsProcessingParameterFeatureSource)
-
 from processing.algs.qgis.QgisAlgorithm import QgisAlgorithm
+from qgis.core import (
+    QgsFeature,
+    QgsFeatureRequest,
+    QgsFeatureSink,
+    QgsGeometry,
+    QgsProcessing,
+    QgsProcessingException,
+    QgsProcessingParameterEnum,
+    QgsProcessingParameterFeatureSink,
+    QgsProcessingParameterFeatureSource,
+    QgsProcessingParameterField,
+    QgsProcessingUtils,
+)
 
 pluginPath = os.path.split(os.path.split(os.path.dirname(__file__))[0])[0]
 
 
 class MergeByArea(QgisAlgorithm):
-    INPUT = 'INPUT'
-    OUTPUT = 'OUTPUT'
-    MODE = 'MODE'
-    VALUE_FIELD = 'VALUE_FIELD'
+    INPUT = "INPUT"
+    OUTPUT = "OUTPUT"
+    MODE = "MODE"
+    VALUE_FIELD = "VALUE_FIELD"
 
     MODE_LARGEST_AREA = 0
     MODE_SMALLEST_AREA = 1
     MODE_BOUNDARY = 2
     MODE_HIGHEST_VALUE = 3
+    MODE_HIGHEST_MATRIX_VALUE = 4
 
     def group(self):
         return "Algoritmi"
@@ -60,62 +60,42 @@ class MergeByArea(QgisAlgorithm):
         super().__init__()
 
     def initAlgorithm(self, config=None):
-        self.modes = [self.tr('Largest Area'),
-                      self.tr('Smallest Area'),
-                      self.tr('Largest Common Boundary'),
-                      self.tr('Highest Value')]
+        self.modes = [
+            self.tr("Largest Area"),
+            self.tr("Smallest Area"),
+            self.tr("Largest Common Boundary")
+        ]
 
         self.addParameter(
-            QgsProcessingParameterFeatureSource(
-                self.INPUT,
-                self.tr('Input layer'),
-                [QgsProcessing.TypeVectorPolygon])
+            QgsProcessingParameterFeatureSource(self.INPUT, self.tr("Input layer"), [QgsProcessing.TypeVectorPolygon])
         )
 
         self.addParameter(
             QgsProcessingParameterEnum(
-                self.MODE,
-                self.tr('Merge selection with the neighbouring polygon with the'),
-                options=self.modes)
-        )
-
-        self.addParameter(
-            QgsProcessingParameterField(
-                name=self.VALUE_FIELD,
-                description="Campo contenente il valore (per esempio intensità)",
-                parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
-                optional=True,
+                self.MODE, self.tr("Merge selection with the neighbouring polygon with the"), options=self.modes
             )
         )
 
         self.addParameter(
-            QgsProcessingParameterFeatureSink(
-                self.OUTPUT,
-                self.tr('Eliminated'),
-                QgsProcessing.TypeVectorPolygon)
+            QgsProcessingParameterFeatureSink(self.OUTPUT, self.tr("Eliminated"), QgsProcessing.TypeVectorPolygon)
         )
 
     def name(self):
-        return 'merge_by_area'
+        return "merge_by_area"
 
     def displayName(self):
-        return 'Fondi per area'
+        return "Fondi per area"
 
     def processAlgorithm(self, parameters, context, feedback):
         inLayer = self.parameterAsSource(parameters, self.INPUT, context)
         mode = self.parameterAsEnum(parameters, self.MODE, context)
         valueField = self.parameterAsFields(parameters, self.VALUE_FIELD, context)
 
-        if mode == self.MODE_HIGHEST_VALUE and not valueField:
-            raise QgsProcessingException(
-                self.tr("When mode is '{0}', the '{1}' parameter must be specified.").format(self.modes[mode], self.VALUE_FIELD)
-                )
-
         featToEliminate = []
 
-        (sink, dest_id) = self.parameterAsSink(parameters, self.OUTPUT, context,
-                                               inLayer.fields(), inLayer.wkbType(), inLayer.sourceCrs())
+        (sink, dest_id) = self.parameterAsSink(
+            parameters, self.OUTPUT, context, inLayer.fields(), inLayer.wkbType(), inLayer.sourceCrs()
+        )
         if sink is None:
             raise QgsProcessingException(self.invalidSinkError(parameters, self.OUTPUT))
 
@@ -159,8 +139,7 @@ class MergeByArea(QgisAlgorithm):
                 feat = featToEliminate.pop()
                 geom2Eliminate = feat.geometry()
                 bbox = geom2Eliminate.boundingBox()
-                fit = processLayer.getFeatures(
-                    QgsFeatureRequest().setFilterRect(bbox).setSubsetOfAttributes([]))
+                fit = processLayer.getFeatures(QgsFeatureRequest().setFilterRect(bbox).setSubsetOfAttributes([]))
                 mergeWithFid = None
                 mergeWithGeom = None
                 max = None
@@ -194,14 +173,10 @@ class MergeByArea(QgisAlgorithm):
                         elif mode == self.MODE_SMALLEST_AREA:
                             selValue = selGeom.area() * -1
 
-                        elif mode == self.MODE_HIGHEST_VALUE:
-                            # Get value of neighbors polygon
-                            selValue = selFeat[valueField[0]]
-
                         else:
                             raise QgsProcessingException(
                                 self.tr("Invalid value '{0}' for parameter '{1}'").format(mode, self.MODE)
-                                )
+                            )
 
                         if selValue is None:
                             # No candidate found
@@ -231,7 +206,8 @@ class MergeByArea(QgisAlgorithm):
                     madeProgress = True
                 else:
                     raise QgsProcessingException(
-                        self.tr('Could not replace geometry of feature with id {0}').format(mergeWithFid))
+                        self.tr("Could not replace geometry of feature with id {0}").format(mergeWithFid)
+                    )
 
                 start = start + add
                 feedback.setProgress(start)
@@ -242,11 +218,13 @@ class MergeByArea(QgisAlgorithm):
 
         # End while
         if not processLayer.commitChanges():
-            raise QgsProcessingException(self.tr('Could not commit changes'))
+            raise QgsProcessingException(self.tr("Could not commit changes"))
 
         for feature in featNotEliminated:
             if feedback.isCanceled():
                 break
+
+            print("Error: could not merge feature: {}".format(feature.id()))
 
             processLayer.dataProvider().addFeature(feature, QgsFeatureSink.FastInsert)
 

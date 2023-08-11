@@ -12,6 +12,8 @@ from qgis.core import (
 )
 from qgis.PyQt.QtCore import QVariant
 
+from pzp_utils.processing.merge_by_area import MergeByArea
+
 
 class DangerZones(QgsProcessingAlgorithm):
     INPUT = "INPUT"
@@ -180,18 +182,6 @@ class DangerZones(QgsProcessingAlgorithm):
                 feedback=feedback,
                 is_child_algorithm=True,
             )
-            result = processing.run(
-                "native:dissolve",
-                {
-                    "INPUT": result["OUTPUT"],
-                    "FIELD": f"{matrix_field}",
-                    "SEPARATE_DISJOINT": True,
-                    "OUTPUT": "memory:",
-                },
-                context=context,
-                feedback=feedback,
-                is_child_algorithm=True,
-            )
 
             if final_layer:
                 result = processing.run(
@@ -210,6 +200,60 @@ class DangerZones(QgsProcessingAlgorithm):
                     "native:mergevectorlayers",
                     {
                         "LAYERS": [result["OUTPUT"], final_layer],
+                        "OUTPUT": "memory:",
+                    },
+                    context=context,
+                    feedback=feedback,
+                    is_child_algorithm=True,
+                )
+
+                result = processing.run(
+                    "native:multiparttosingleparts",
+                    {
+                        "INPUT": result["OUTPUT"],
+                        "OUTPUT": "memory:",
+                    },
+                    context=context,
+                    feedback=feedback,
+                    is_child_algorithm=True,
+                )
+
+                result = processing.run(
+                    "native:fixgeometries",
+                    {"INPUT": result["OUTPUT"], "OUTPUT": "memory:"},
+                    context=context,
+                    feedback=feedback,
+                    is_child_algorithm=True,
+                )
+
+                result = processing.run(
+                    "pzp:merge_by_area",
+                    {
+                        "INPUT": result["OUTPUT"],
+                        "MODE": MergeByArea.MODE_BOUNDARY,
+                        "OUTPUT": "memory:",
+                    },
+                    context=context,
+                    feedback=feedback,
+                    is_child_algorithm=True,
+                )
+
+                result = processing.run(
+                    "native:multiparttosingleparts",
+                    {
+                        "INPUT": result["OUTPUT"],
+                        "OUTPUT": "memory:",
+                    },
+                    context=context,
+                    feedback=feedback,
+                    is_child_algorithm=True,
+                )
+
+                # Workaround to re-remove small invalid parts that comes back after multi to single
+                result = processing.run(
+                    "pzp:remove_by_area",
+                    {
+                        "INPUT": result["OUTPUT"],
                         "OUTPUT": "memory:",
                     },
                     context=context,

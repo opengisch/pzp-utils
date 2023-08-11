@@ -1,23 +1,13 @@
+from qgis import processing
 from qgis.core import (
-    QgsFeature,
-    QgsFeatureSink,
-    QgsField,
-    QgsFields,
     QgsProcessing,
     QgsProcessingAlgorithm,
-    QgsProcessingException,
     QgsProcessingParameterFeatureSink,
     QgsProcessingParameterFeatureSource,
-    QgsProcessingParameterField,
-    QgsProcessingParameterMatrix,
 )
-from qgis.PyQt.QtCore import QVariant
-
-from qgis import processing
 
 
 class FixGeometries(QgsProcessingAlgorithm):
-
     INPUT = "INPUT"
     OUTPUT = "OUTPUT"
 
@@ -48,20 +38,13 @@ class FixGeometries(QgsProcessingAlgorithm):
             )
         )
 
-        self.addParameter(QgsProcessingParameterFeatureSink(
-            self.OUTPUT, "Output layer"))
+        self.addParameter(QgsProcessingParameterFeatureSink(self.OUTPUT, "Output layer"))
 
     def processAlgorithm(self, parameters, context, feedback):
 
-        min_area_to_keep = 1
-        delete_holes_area = 100
-
         result = processing.run(
             "native:fixgeometries",
-            {
-                'INPUT': parameters[self.INPUT],
-                'OUTPUT': "memory:"
-            },
+            {"INPUT": parameters[self.INPUT], "OUTPUT": "memory:"},
             context=context,
             feedback=feedback,
             is_child_algorithm=True,
@@ -70,9 +53,9 @@ class FixGeometries(QgsProcessingAlgorithm):
         result = processing.run(
             "pzp:merge_by_area",
             {
-                'INPUT': result['OUTPUT'],
-                'MODE': 2,
-                'OUTPUT': parameters[self.OUTPUT],
+                "INPUT": result["OUTPUT"],
+                "MODE": 2,
+                "OUTPUT": parameters[self.OUTPUT],
             },
             context=context,
             feedback=feedback,
@@ -82,12 +65,12 @@ class FixGeometries(QgsProcessingAlgorithm):
         result = processing.run(
             "native:snappointstogrid",
             {
-                'INPUT': result['OUTPUT'],
-                'HSPACING': 0.001,
-                'VSPACING': 0.001,
-                'ZSPACING': 0,
-                'MSPACING': 0,
-                'OUTPUT': 'memory:',
+                "INPUT": result["OUTPUT"],
+                "HSPACING": 0.001,
+                "VSPACING": 0.001,
+                "ZSPACING": 0,
+                "MSPACING": 0,
+                "OUTPUT": "memory:",
             },
             context=context,
             feedback=feedback,
@@ -97,14 +80,14 @@ class FixGeometries(QgsProcessingAlgorithm):
         result = processing.run(
             "native:buffer",
             {
-                'INPUT': result['OUTPUT'],
-                'DISTANCE': -1e-06,
-                'SEGMENTS': 5,
-                'END_CAP_STYLE': 0,
-                'JOIN_STYLE': 0,
-                'MITER_LIMIT': 2,
-                'DISSOLVE': False,
-                'OUTPUT': 'memory:'
+                "INPUT": result["OUTPUT"],
+                "DISTANCE": -1e-06,
+                "SEGMENTS": 5,
+                "END_CAP_STYLE": 0,
+                "JOIN_STYLE": 0,
+                "MITER_LIMIT": 2,
+                "DISSOLVE": False,
+                "OUTPUT": "memory:",
             },
             context=context,
             feedback=feedback,
@@ -114,12 +97,12 @@ class FixGeometries(QgsProcessingAlgorithm):
         result = processing.run(
             "native:snappointstogrid",
             {
-                'INPUT': result['OUTPUT'],
-                'HSPACING': 0.001,
-                'VSPACING': 0.001,
-                'ZSPACING': 0,
-                'MSPACING': 0,
-                'OUTPUT': 'memory:',
+                "INPUT": result["OUTPUT"],
+                "HSPACING": 0.001,
+                "VSPACING": 0.001,
+                "ZSPACING": 0,
+                "MSPACING": 0,
+                "OUTPUT": "memory:",
             },
             context=context,
             feedback=feedback,
@@ -129,14 +112,14 @@ class FixGeometries(QgsProcessingAlgorithm):
         result = processing.run(
             "native:buffer",
             {
-                'INPUT': result['OUTPUT'],
-                'DISTANCE': 1e-06,
-                'SEGMENTS': 5,
-                'END_CAP_STYLE': 0,
-                'JOIN_STYLE': 0,
-                'MITER_LIMIT': 2,
-                'DISSOLVE': False,
-                'OUTPUT': 'memory:'
+                "INPUT": result["OUTPUT"],
+                "DISTANCE": 1e-06,
+                "SEGMENTS": 5,
+                "END_CAP_STYLE": 0,
+                "JOIN_STYLE": 0,
+                "MITER_LIMIT": 2,
+                "DISSOLVE": False,
+                "OUTPUT": "memory:",
             },
             context=context,
             feedback=feedback,
@@ -146,12 +129,12 @@ class FixGeometries(QgsProcessingAlgorithm):
         result = processing.run(
             "native:snappointstogrid",
             {
-                'INPUT': result['OUTPUT'],
-                'HSPACING': 0.001,
-                'VSPACING': 0.001,
-                'ZSPACING': 0,
-                'MSPACING': 0,
-                'OUTPUT': 'memory:',
+                "INPUT": result["OUTPUT"],
+                "HSPACING": 0.001,
+                "VSPACING": 0.001,
+                "ZSPACING": 0,
+                "MSPACING": 0,
+                "OUTPUT": "memory:",
             },
             context=context,
             feedback=feedback,
@@ -160,13 +143,10 @@ class FixGeometries(QgsProcessingAlgorithm):
 
         result = processing.run(
             "native:fixgeometries",
-            {
-                'INPUT': result['OUTPUT'],
-                'OUTPUT': "memory:"
-            },
+            {"INPUT": result["OUTPUT"], "OUTPUT": "memory:"},
             context=context,
             feedback=feedback,
             is_child_algorithm=True,
         )
 
-        return {self.OUTPUT: result['OUTPUT']}
+        return {self.OUTPUT: result["OUTPUT"]}
