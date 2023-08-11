@@ -169,7 +169,6 @@ class DangerZones(QgsProcessingAlgorithm):
         process_source = process_source.replace("'", "''")
 
         final_layer = None
-
         for matrix_value in used_matrix_values:
             feedback.pushInfo(f'"{matrix_field}" = {matrix_value} AND "{process_source_field}" = \'{process_source}\'')
             result = processing.run(
@@ -183,18 +182,6 @@ class DangerZones(QgsProcessingAlgorithm):
                 feedback=feedback,
                 is_child_algorithm=True,
             )
-            # result = processing.run(
-            #     "native:dissolve",
-            #     {
-            #         "INPUT": result["OUTPUT"],
-            #         "FIELD": f"{matrix_field}",
-            #         "SEPARATE_DISJOINT": True,
-            #         "OUTPUT": "memory:",
-            #     },
-            #     context=context,
-            #     feedback=feedback,
-            #     is_child_algorithm=True,
-            # )
 
             if final_layer:
                 result = processing.run(

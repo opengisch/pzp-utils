@@ -63,9 +63,7 @@ class MergeByArea(QgisAlgorithm):
         self.modes = [
             self.tr("Largest Area"),
             self.tr("Smallest Area"),
-            self.tr("Largest Common Boundary"),
-            self.tr("Highest Value"),
-            self.tr("Highest Matrix Value"),
+            self.tr("Largest Common Boundary")
         ]
 
         self.addParameter(
@@ -75,16 +73,6 @@ class MergeByArea(QgisAlgorithm):
         self.addParameter(
             QgsProcessingParameterEnum(
                 self.MODE, self.tr("Merge selection with the neighbouring polygon with the"), options=self.modes
-            )
-        )
-
-        self.addParameter(
-            QgsProcessingParameterField(
-                name=self.VALUE_FIELD,
-                description="Campo contenente il valore (per esempio matrice)",
-                parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
-                optional=True,
             )
         )
 
@@ -102,13 +90,6 @@ class MergeByArea(QgisAlgorithm):
         inLayer = self.parameterAsSource(parameters, self.INPUT, context)
         mode = self.parameterAsEnum(parameters, self.MODE, context)
         valueField = self.parameterAsFields(parameters, self.VALUE_FIELD, context)
-
-        if (mode == self.MODE_HIGHEST_VALUE or mode == self.MODE_HIGHEST_MATRIX_VALUE) and not valueField:
-            raise QgsProcessingException(
-                self.tr("When mode is '{0}', the '{1}' parameter must be specified.").format(
-                    self.modes[mode], self.VALUE_FIELD
-                )
-            )
 
         featToEliminate = []
 
@@ -192,25 +173,6 @@ class MergeByArea(QgisAlgorithm):
                         elif mode == self.MODE_SMALLEST_AREA:
                             selValue = selGeom.area() * -1
 
-                        elif mode == self.MODE_HIGHEST_VALUE:
-                            # Get value of neighbors polygon
-                            selValue = selFeat[valueField[0]]
-
-                        elif mode == self.MODE_HIGHEST_MATRIX_VALUE:
-                            # Get value of neighbors polygon
-                            selValue = selFeat[valueField[0]]
-
-                            print(f"selFeat: {selFeat.attributes()}")
-                            print(f"selFeat: {selFeat.fields().names()}")
-
-                            if not selValue:
-                                continue
-
-                            selValue = selValue * -1
-
-                            if selValue == -1000:
-                                selValue = -1011
-
                         else:
                             raise QgsProcessingException(
                                 self.tr("Invalid value '{0}' for parameter '{1}'").format(mode, self.MODE)
@@ -232,8 +194,6 @@ class MergeByArea(QgisAlgorithm):
                             mergeWithFid = selFeat.id()
                             mergeWithGeom = QgsGeometry(selGeom)
                 # End while fit
-
-                print(f"mergeWithFid: {mergeWithFid}")
 
                 if mergeWithFid is None:
                     featNotEliminated.append(feat)
