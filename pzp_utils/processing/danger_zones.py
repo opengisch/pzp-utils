@@ -116,7 +116,7 @@ class DangerZones(QgsProcessingAlgorithm):
             "native:dissolve",
             {
                 "INPUT": parameters[self.INPUT],
-                "FIELD": f"{matrix_field}",
+                "FIELD": f"{matrix_field};{process_source_field}",
                 "SEPARATE_DISJOINT": True,
                 "OUTPUT": "memory:",
             },
