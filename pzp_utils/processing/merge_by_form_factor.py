@@ -31,16 +31,19 @@ from qgis.core import (
     QgsProcessingParameterEnum,
     QgsProcessingParameterFeatureSink,
     QgsProcessingParameterFeatureSource,
+    QgsProcessingParameterNumber,
     QgsProcessingUtils,
 )
 
 pluginPath = os.path.split(os.path.split(os.path.dirname(__file__))[0])[0]
 
 
-class MergeByArea(QgisAlgorithm):
+class MergeByFormFactor(QgisAlgorithm):
     INPUT = "INPUT"
     OUTPUT = "OUTPUT"
     MODE = "MODE"
+    FORM_FACTOR = "FORM_FACTOR"
+    AREA_TRESHOLD = "AREA_TRESHOLD"
 
     MODE_LARGEST_AREA = 0
     MODE_SMALLEST_AREA = 1
@@ -69,18 +72,28 @@ class MergeByArea(QgisAlgorithm):
         )
 
         self.addParameter(
+            QgsProcessingParameterNumber(self.FORM_FACTOR, self.tr("Minimum form factor to keep the geometry"))
+        )
+
+        self.addParameter(
+            QgsProcessingParameterNumber(self.AREA_TRESHOLD, self.tr("Minimum area to keep the geometry"))
+        )
+
+        self.addParameter(
             QgsProcessingParameterFeatureSink(self.OUTPUT, self.tr("Eliminated"), QgsProcessing.TypeVectorPolygon)
         )
 
     def name(self):
-        return "merge_by_area"
+        return "merge_by_form_factor"
 
     def displayName(self):
-        return "Fondi per area"
+        return "Fondi per fattore di forma"
 
     def processAlgorithm(self, parameters, context, feedback):
         inLayer = self.parameterAsSource(parameters, self.INPUT, context)
         mode = self.parameterAsEnum(parameters, self.MODE, context)
+        formFactor = self.parameterAsDouble(parameters, self.FORM_FACTOR, context)
+        areaTreshold = self.parameterAsDouble(parameters, self.AREA_TRESHOLD, context)
 
         featToEliminate = []
 
@@ -94,7 +107,10 @@ class MergeByArea(QgisAlgorithm):
             if feedback.isCanceled():
                 break
 
-            if feature.geometry().area() <= 1:
+            # Check area treshold and form factor
+            if self._checkArea(feature.geometry(), areaTreshold) and self._checkFormFactor(
+                feature.geometry(), formFactor
+            ):
                 featToEliminate.append(feature)
             else:
                 # write the others to output
@@ -220,3 +236,14 @@ class MergeByArea(QgisAlgorithm):
             processLayer.dataProvider().addFeature(feature, QgsFeatureSink.FastInsert)
 
         return {self.OUTPUT: dest_id}
+
+    def _checkArea(self, geometry, areaTreshold):
+        return geometry.area() <= areaTreshold
+
+    def _checkFormFactor(self, geometry, formFactorTreshold):
+        minimumBoundingBox, area, angle, width, height = geometry.orientedMinimumBoundingBox()
+
+        formFactor = min(height, width) / max(height, width)
+        print("Form factor: {}".format(formFactor))
+
+        return formFactor <= formFactorTreshold

@@ -249,6 +249,31 @@ class DangerZones(QgsProcessingAlgorithm):
                     is_child_algorithm=True,
                 )
 
+                result = processing.run(
+                    "pzp:merge_by_form_factor",
+                    {
+                        "INPUT": result["OUTPUT"],
+                        "MODE": MergeByArea.MODE_BOUNDARY,
+                        "FORM_FACTOR": 0.1,
+                        "AREA_TRESHOLD": 10,
+                        "OUTPUT": "memory:",
+                    },
+                    context=context,
+                    feedback=feedback,
+                    is_child_algorithm=True,
+                )
+
+                result = processing.run(
+                    "native:multiparttosingleparts",
+                    {
+                        "INPUT": result["OUTPUT"],
+                        "OUTPUT": "memory:",
+                    },
+                    context=context,
+                    feedback=feedback,
+                    is_child_algorithm=True,
+                )
+
                 # Workaround to re-remove small invalid parts that comes back after multi to single
                 result = processing.run(
                     "pzp:remove_by_area",
